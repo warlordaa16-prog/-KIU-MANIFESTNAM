@@ -1,0 +1,6 @@
+{
+  "name": "Manifest Fellowship Management System",
+  "description": "Comprehensive digital operational backbone for Manifest Fellowship managing people, students, attendance, first-timers, follow-up, homes, departments, events, financial accounting, and growth analytics.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

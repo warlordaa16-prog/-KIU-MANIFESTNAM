@@ -10,13 +10,7 @@ import { MemberDirectory } from './components/members/MemberDirectory';
 import { MemberRegistrationModal } from './components/members/MemberRegistrationModal';
 import { MemberProfileModal } from './components/members/MemberProfileModal';
 import { MemberIdCardModal } from './components/members/MemberIdCardModal';
-import { AttendanceManager } from './components/attendance/AttendanceManager';
 import { FirstTimerFollowUpManager } from './components/followup/FirstTimerFollowUpManager';
-import { HomesManager } from './components/homes/HomesManager';
-import { DepartmentsManager } from './components/departments/DepartmentsManager';
-import { FinanceManager } from './components/finance/FinanceManager';
-import { EventsManager } from './components/events/EventsManager';
-import { CommunicationManager } from './components/communication/CommunicationManager';
 import { ReportsManager } from './components/reports/ReportsManager';
 import { THEME_PRESETS } from './themeConstants';
 import { Member } from './types';
@@ -26,14 +20,10 @@ const MainAppContent: React.FC = () => {
     activeTab,
     setActiveTab,
     members,
-    recordAttendance,
-    activeEventId,
-    events,
     currentUserName,
     currentTheme,
     watermarkOpacity,
     isWatermarkGlow,
-    showToast,
   } = useFellowship();
 
   const themeConfig = THEME_PRESETS[currentTheme] || THEME_PRESETS['obsidian-kiu'];
@@ -67,22 +57,6 @@ const MainAppContent: React.FC = () => {
     }
   };
 
-  const handleQuickCheckIn = (member: Member) => {
-    const activeEvent = events.find((e) => e.id === activeEventId) || events[0];
-    if (activeEvent) {
-      recordAttendance({
-        memberId: member.id,
-        memberName: member.fullName,
-        memberPhone: member.phone,
-        eventId: activeEvent.id,
-        eventName: activeEvent.name,
-        status: 'Present',
-        recordedBy: currentUserName,
-        checkInMethod: 'Quick Action',
-      });
-    }
-  };
-
   return (
     <div className={`min-h-screen ${themeConfig.bgClass} flex flex-col font-sans transition-colors duration-500 relative selection:bg-orange-500 selection:text-white`}>
       
@@ -96,10 +70,6 @@ const MainAppContent: React.FC = () => {
       {/* Top Header */}
       <Header
         onOpenRegister={() => setIsRegisterOpen(true)}
-        onOpenQuickCheckIn={() => setActiveTab('attendance')}
-        onOpenRecordIncome={() => setActiveTab('finances')}
-        onOpenExpenseRequest={() => setActiveTab('finances')}
-        onOpenBroadcast={() => setActiveTab('communication')}
         onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)}
       />
 
@@ -115,9 +85,7 @@ const MainAppContent: React.FC = () => {
             {activeTab === 'dashboard' && (
               <AdminDashboard
                 onOpenRegister={() => setIsRegisterOpen(true)}
-                onOpenAttendance={() => setActiveTab('attendance')}
                 onOpenFollowUp={() => setActiveTab('follow-up')}
-                onOpenFinances={() => setActiveTab('finances')}
                 onSelectMember={handleOpenProfile}
               />
             )}
@@ -127,14 +95,6 @@ const MainAppContent: React.FC = () => {
                 onOpenRegister={() => setIsRegisterOpen(true)}
                 onSelectMember={handleOpenProfile}
                 onViewIdCard={handleOpenIdCard}
-                onQuickCheckInMember={handleQuickCheckIn}
-              />
-            )}
-
-            {activeTab === 'attendance' && (
-              <AttendanceManager
-                onOpenRegister={() => setIsRegisterOpen(true)}
-                onSelectMember={handleOpenProfile}
               />
             )}
 
@@ -143,30 +103,6 @@ const MainAppContent: React.FC = () => {
                 onOpenRegister={() => setIsRegisterOpen(true)}
                 onSelectMemberById={handleOpenProfileById}
               />
-            )}
-
-            {activeTab === 'homes' && (
-              <HomesManager
-                onSelectMember={handleOpenProfile}
-                onOpenRegister={() => setIsRegisterOpen(true)}
-              />
-            )}
-
-            {activeTab === 'departments' && (
-              <DepartmentsManager onSelectMember={handleOpenProfile} />
-            )}
-
-            {activeTab === 'finances' && <FinanceManager />}
-
-            {activeTab === 'events' && (
-              <EventsManager
-                onSelectMember={handleOpenProfile}
-                onOpenCheckInForEvent={(eventId) => setActiveTab('attendance')}
-              />
-            )}
-
-            {(activeTab === 'communication' || activeTab === 'communications') && (
-              <CommunicationManager />
             )}
 
             {(activeTab === 'reports' || activeTab === 'admin') && <ReportsManager />}
@@ -191,10 +127,7 @@ const MainAppContent: React.FC = () => {
         member={profileMember}
         isOpen={!!profileMember}
         onClose={() => setProfileMember(null)}
-        onViewIdCard={(m) => {
-          setProfileMember(null);
-          setIdCardMember(m);
-        }}
+        onViewIdCard={handleOpenIdCard}
       />
 
       <MemberIdCardModal
@@ -203,9 +136,7 @@ const MainAppContent: React.FC = () => {
         onClose={() => setIdCardMember(null)}
       />
 
-      {/* Toast Notification Container */}
       <ToastContainer />
-
     </div>
   );
 };
@@ -217,4 +148,3 @@ export default function App() {
     </FellowshipProvider>
   );
 }
-

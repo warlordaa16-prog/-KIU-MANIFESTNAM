@@ -41,6 +41,7 @@ export interface Member {
   email: string;
   dateOfBirth?: string;
   profilePhoto?: string;
+  residence?: string; // e.g. 'Kansanga', 'Kabalagala', 'Ggaba', 'Bunga'
   
   // Student Profile
   studentInfo: StudentProfile;
@@ -53,7 +54,7 @@ export interface Member {
   howFoundManifest: string; // e.g. "Friend/Member", "Social Media", "Campus Outreach", "Flyer/Poster", "Event"
   invitedBy?: string;
   
-  homeId?: string; // e.g. 'home-sinai'
+  homeId?: string; // Legacy / optional
   departmentIds: string[]; // e.g. ['dept-choir', 'dept-media']
   
   notes?: string;
@@ -116,14 +117,14 @@ export interface FollowUpRecord {
 export interface HomeGroup {
   id: string;
   name: string; // e.g. "Home Sinai", "Home Zion"
-  zone: string; // e.g. "Main Campus / Lumumba", "Kikoni Zone", "Banda"
+  zone: string; // e.g. "Kansanga - KIU Main Campus Zone", "Kabalagala", "Nsambya", "Makindye"
   leaderId: string;
   leaderName: string;
   leaderPhone: string;
   assistantLeaderId?: string;
   assistantLeaderName?: string;
   meetingDay: string; // e.g. "Every Wednesday 6:00 PM"
-  location: string; // e.g. "Mary Stuart Hall Common Room"
+  location: string; // e.g. "KIU Main Gate Lounge", "Prestige Hostel Quad"
   description?: string;
   targetCount: number;
 }

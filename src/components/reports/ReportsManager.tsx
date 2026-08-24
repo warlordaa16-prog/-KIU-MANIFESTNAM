@@ -4,21 +4,19 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  DollarSign,
   HeartHandshake,
-  Home,
-  Layers,
   Download,
-  Calendar,
   Sparkles,
-  PieChart as PieIcon,
-  CheckCircle2,
+  BookOpen,
+  GraduationCap,
+  MapPin,
 } from 'lucide-react';
 
 export const ReportsManager: React.FC = () => {
-  const { members, attendance, followUps, finances, homes, departments } = useFellowship();
-
-  const [timeRange, setTimeRange] = useState<'month' | 'quarter' | 'year'>('month');
+  const {
+    members = [],
+    followUps = [],
+  } = useFellowship();
 
   // Stats
   const totalMembers = members.length;
@@ -26,35 +24,26 @@ export const ReportsManager: React.FC = () => {
   const firstTimersCount = members.filter((m) => m.status === 'First Timer' || m.isFirstTimer).length;
   const studentsCount = members.filter((m) => m.studentInfo?.isStudent).length;
 
-  const totalIncome = finances
-    .filter((f) => f.type === 'Income' && f.approvalStatus === 'Approved')
-    .reduce((acc, curr) => acc + curr.amount, 0);
-
-  const totalExpenses = finances
-    .filter((f) => f.type === 'Expense' && f.approvalStatus === 'Approved')
-    .reduce((acc, curr) => acc + curr.amount, 0);
-
   const followUpRetained = followUps.filter((f) => f.status === 'Joined' || f.status === 'Completed').length;
   const retentionRate = followUps.length > 0 ? Math.round((followUpRetained / followUps.length) * 100) : 0;
 
-  // Home cells breakdown
-  const homeStats = homes.map((h) => {
-    const count = members.filter((m) => m.homeId === h.id).length;
-    return { ...h, currentSouls: count };
-  });
+  // Campus distribution breakdown
+  const campusGroups = members.reduce<Record<string, number>>((acc, m) => {
+    const campus = m.studentInfo?.campus || 'Non-Student / Working';
+    acc[campus] = (acc[campus] || 0) + 1;
+    return acc;
+  }, {});
 
-  // Department breakdown
-  const deptStats = departments.map((d) => {
-    const count = members.filter((m) => m.departmentIds?.includes(d.id)).length;
-    const spent = finances
-      .filter((f) => f.departmentId === d.id && f.type === 'Expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
-    return { ...d, volunteers: count, spent };
-  });
+  // Makindye division zones / residential breakdown
+  const residenceGroups = members.reduce<Record<string, number>>((acc, m) => {
+    const residence = m.residence || 'Kansanga';
+    acc[residence] = (acc[residence] || 0) + 1;
+    return acc;
+  }, {});
 
   const exportExecutiveReport = () => {
     const reportText = `
-MANIFEST FELLOWSHIP EXECUTIVE STATE REPORT
+MANIFEST FELLOWSHIP K.I.U EXECUTIVE REPORT
 Generated: ${new Date().toLocaleDateString()}
 
 =============================================
@@ -63,37 +52,30 @@ Generated: ${new Date().toLocaleDateString()}
 Total Registered Souls: ${totalMembers}
 Active Regular Members: ${activeMembers}
 First-Timers Logged: ${firstTimersCount}
-University Students: ${studentsCount} (${Math.round((studentsCount / totalMembers) * 100)}%)
+University Students: ${studentsCount} (${Math.round((studentsCount / (totalMembers || 1)) * 100)}%)
 
 =============================================
 2. FIRST-TIMER & RETENTION PIPELINE
 ---------------------------------------------
 Total First-Timers Processed: ${followUps.length}
-Integrated / Joined Home: ${followUpRetained}
+Integrated & Retained: ${followUpRetained}
 Fellowship Retention Rate: ${retentionRate}%
 
 =============================================
-3. FINANCIAL STEWARDSHIP SUMMARY
+3. RESIDENTIAL & ZONAL REACH (MAKINDYE DIVISION)
 ---------------------------------------------
-Total Approved Inflows: UGX ${totalIncome.toLocaleString()}
-Total Approved Outflows: UGX ${totalExpenses.toLocaleString()}
-Net Operating Reserve: UGX ${(totalIncome - totalExpenses).toLocaleString()}
+${Object.entries(residenceGroups).map(([zone, count]) => `- ${zone}: ${count} members`).join('\n')}
 
 =============================================
-4. HOMES (CELL GROUPS) STRENGTH
+4. CAMPUS & ACADEMIC SECTORS
 ---------------------------------------------
-${homeStats.map((h) => `- ${h.name} (${h.zone}): ${h.currentSouls} members [Leader: ${h.leaderName}]`).join('\n')}
-
-=============================================
-5. SERVING WINGS (DEPARTMENTS)
----------------------------------------------
-${deptStats.map((d) => `- ${d.name} (${d.code}): ${d.volunteers} active volunteers | Spent: UGX ${d.spent.toLocaleString()}`).join('\n')}
+${Object.entries(campusGroups).map(([camp, count]) => `- ${camp}: ${count} members`).join('\n')}
     `;
 
     const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `manifest_executive_report_${new Date().toISOString().split('T')[0]}.txt`;
+    link.download = `manifest_kiu_report_${new Date().toISOString().split('T')[0]}.txt`;
     link.click();
   };
 
@@ -104,23 +86,23 @@ ${deptStats.map((d) => `- ${d.name} (${d.code}): ${d.volunteers} active voluntee
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              Section 17 Analytics & Executive Insights
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-orange-500/20 text-orange-300 border border-orange-500/30">
+              Executive Soul Insights & Analytics
             </span>
           </div>
           <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2 mt-1">
-            <BarChart3 className="w-5 h-5 text-amber-400" />
-            Executive Reports & Fellowship Analytics
+            <BarChart3 className="w-5 h-5 text-orange-400" />
+            Fellowship Reports & Demographics
           </h1>
           <p className="text-xs text-slate-400">
-            Real-time visual reports on spiritual growth, discipleship retention, finances, and ministries
+            Real-time analytics on spiritual retention, KIU student scholars, and Makindye residential reach
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={exportExecutiveReport}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95 border border-orange-400/30"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download Executive Brief</span>
@@ -129,108 +111,104 @@ ${deptStats.map((d) => `- ${d.name} (${d.code}): ${d.volunteers} active voluntee
       </div>
 
       {/* Primary KPI Blocks */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-          <div className="text-xs text-slate-400 font-semibold">Retention Success Rate</div>
-          <div className="text-2xl font-black text-emerald-400 mt-1">{retentionRate}%</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">First-timers retained into homes</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+          <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+            <span>Retention Success Rate</span>
+            <Sparkles className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="text-3xl font-black text-emerald-400 mt-2">{retentionRate}%</div>
+          <div className="text-xs text-slate-400 mt-1">First-timers successfully integrated</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-          <div className="text-xs text-slate-400 font-semibold">Student Representation</div>
-          <div className="text-2xl font-black text-indigo-400 mt-1">
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+          <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+            <span>KIU Student Scholars</span>
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div className="text-3xl font-black text-indigo-400 mt-2">
             {Math.round((studentsCount / (totalMembers || 1)) * 100)}%
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{studentsCount} campus student souls</div>
+          <div className="text-xs text-slate-400 mt-1">{studentsCount} university scholars</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-          <div className="text-xs text-slate-400 font-semibold">Active Cell Cells</div>
-          <div className="text-2xl font-black text-amber-300 mt-1">{homes.length} Homes</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Weekly neighborhood gatherings</div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-          <div className="text-xs text-slate-400 font-semibold">Ministry Servants</div>
-          <div className="text-2xl font-black text-cyan-400 mt-1">
-            {members.filter((m) => m.departmentIds && m.departmentIds.length > 0).length} Volunteers
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+          <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+            <span>Total Registered</span>
+            <Users className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Active serving ministers</div>
+          <div className="text-3xl font-black text-amber-300 mt-2">{totalMembers} Souls</div>
+          <div className="text-xs text-slate-400 mt-1">{activeMembers} active covenant members</div>
         </div>
       </div>
 
       {/* Grid of Analytical Breakdown Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
-        {/* Card 1: Home Groups Cell Strength */}
-        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        {/* Card 1: Makindye Division Residential Geography */}
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-md">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Home className="w-4 h-4 text-amber-400" />
-              Home Fellowship (Cell) Membership Distribution
+              <MapPin className="w-4 h-4 text-amber-400" />
+              Makindye Division & Kansanga Geographic Reach
             </h3>
-            <span className="text-xs text-slate-400 font-mono">{homes.length} Cells</span>
+            <span className="text-xs text-slate-400 font-mono">{Object.keys(residenceGroups).length} Zones</span>
           </div>
 
           <div className="space-y-3">
-            {homeStats.map((h) => {
-              const percentage = Math.round((h.currentSouls / (totalMembers || 1)) * 100);
+            {Object.entries(residenceGroups).map(([zone, count]) => {
+              const numCount = count as number;
+              const percentage = Math.round((numCount / (totalMembers || 1)) * 100);
 
               return (
-                <div key={h.id} className="space-y-1">
+                <div key={zone} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">{h.name} ({h.zone})</span>
-                    <span className="font-semibold text-amber-300">{h.currentSouls} Souls ({percentage}%)</span>
+                    <span className="font-bold text-slate-200">{zone}</span>
+                    <span className="font-semibold text-amber-300">{numCount} Souls ({percentage}%)</span>
                   </div>
                   <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full"
-                      style={{ width: `${Math.min(percentage * 2, 100)}%` }}
+                      style={{ width: `${Math.min(percentage * 2.5, 100)}%` }}
                     />
                   </div>
-                  <div className="text-[10px] text-slate-500">Leader: {h.leaderName}</div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Card 2: Ministries / Departments Volunteers */}
-        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        {/* Card 2: Campus Demographics */}
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-md">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              Department Volunteers & Financial Spend
+              <GraduationCap className="w-4 h-4 text-indigo-400" />
+              Campus Demographic Distribution
             </h3>
-            <span className="text-xs text-slate-400 font-mono">{departments.length} Wings</span>
+            <span className="text-xs text-slate-400 font-mono">{Object.keys(campusGroups).length} Sectors</span>
           </div>
 
-          <div className="space-y-3">
-            {deptStats.map((d) => (
-              <div
-                key={d.id}
-                className="p-3 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs"
-              >
-                <div>
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <span className="font-mono text-[10px] text-cyan-400 bg-cyan-950 px-1 rounded">
-                      {d.code}
-                    </span>
-                    <span>{d.name}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">
-                    Head: {d.headName} • Budget: UGX {d.budget?.toLocaleString() || 0}
-                  </div>
-                </div>
+          <div className="space-y-2.5">
+            {Object.entries(campusGroups).map(([campus, count]) => {
+              const numCount = count as number;
+              const percentage = Math.round((numCount / (totalMembers || 1)) * 100);
 
-                <div className="text-right">
-                  <div className="font-bold text-cyan-300">{d.volunteers} Volunteers</div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Spend: UGX {d.spent.toLocaleString()}
+              return (
+                <div
+                  key={campus}
+                  className="p-3 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <div className="font-bold text-slate-200">{campus}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{percentage}% of fellowship body</div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="font-bold text-indigo-300">{numCount} Members</div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

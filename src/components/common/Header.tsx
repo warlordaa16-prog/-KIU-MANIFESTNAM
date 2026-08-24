@@ -9,8 +9,6 @@ import {
   Shield,
   UserCheck,
   Calendar,
-  DollarSign,
-  Send,
   Bell,
   Sparkles,
   RefreshCw,
@@ -22,19 +20,11 @@ import {
 
 interface HeaderProps {
   onOpenRegister: () => void;
-  onOpenQuickCheckIn: () => void;
-  onOpenRecordIncome: () => void;
-  onOpenExpenseRequest: () => void;
-  onOpenBroadcast: () => void;
   onOpenThemeDrawer?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenRegister,
-  onOpenQuickCheckIn,
-  onOpenRecordIncome,
-  onOpenExpenseRequest,
-  onOpenBroadcast,
   onOpenThemeDrawer,
 }) => {
   const {
@@ -44,8 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
     setCurrentUserName,
     searchQuery,
     setSearchQuery,
-    followUps,
-    expenses,
+    followUps = [],
     setActiveTab,
     exportBackupJson,
     currentTheme,
@@ -58,21 +47,15 @@ export const Header: React.FC<HeaderProps> = ({
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const pendingFollowUps = followUps.filter((f) => f.status === 'Pending' || f.status === 'Assigned').length;
-  const pendingApprovals = expenses.filter((e) => e.status === 'Pending Approval').length;
-  const totalNotifications = pendingFollowUps + pendingApprovals;
+  const pendingFollowUps = (followUps || []).filter((f) => f.status === 'Pending' || f.status === 'Assigned').length;
+  const totalNotifications = pendingFollowUps;
 
   const roles: { role: UserRole; label: string; desc: string }[] = [
-    { role: 'Super Admin', label: 'Super Admin', desc: 'Full unrestricted system & financial access' },
+    { role: 'Super Admin', label: 'Super Admin', desc: 'Full unrestricted system access' },
     { role: 'Fellowship Admin', label: 'Fellowship Admin', desc: 'General fellowship operations & members' },
-    { role: 'Finance Admin', label: 'Finance Admin', desc: 'Full treasury, budgets & approval control' },
-    { role: 'Finance Officer', label: 'Finance Officer', desc: 'Record daily income & expense transactions' },
     { role: 'Coordinator', label: 'Follow-Up Coordinator', desc: 'First-timer care & integration pipeline' },
-    { role: 'Homes Leader', label: 'Homes Shepherd', desc: 'Assigned Home fellowship cell group' },
-    { role: 'Department Leader', label: 'Department Head', desc: 'Ministry roster & budget requests' },
-    { role: 'Attendance Officer', label: 'Attendance Officer', desc: 'Fast check-in & meeting records' },
-    { role: 'Auditor', label: 'Auditor', desc: 'Read-only financial & operational audit logs' },
-    { role: 'Member', label: 'Fellowship Member', desc: 'Personal ID pass & announcements' },
+    { role: 'Auditor', label: 'Auditor', desc: 'Read-only operational audit logs' },
+    { role: 'Member', label: 'Fellowship Member', desc: 'Personal ID pass & fellowship activities' },
   ];
 
   return (
@@ -92,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="hidden xl:block">
               <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                MFMS K.I.U
+                KIU & Makindye Hub
               </span>
             </div>
           </div>
@@ -168,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setShowQuickActions(false);
                       onOpenRegister();
                     }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-indigo-300 text-xs flex items-center gap-2.5 transition-colors"
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-orange-300 text-xs flex items-center gap-2.5 transition-colors"
                   >
                     <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400">
                       <Users className="w-3.5 h-3.5" />
@@ -182,64 +165,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setShowQuickActions(false);
-                      onOpenQuickCheckIn();
+                      setActiveTab('follow-up');
                     }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-indigo-300 text-xs flex items-center gap-2.5 transition-colors"
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-orange-300 text-xs flex items-center gap-2.5 transition-colors"
                   >
-                    <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400">
+                    <div className="p-1.5 rounded bg-orange-500/10 text-orange-400">
                       <UserCheck className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="font-medium">Fast Check-In</div>
-                      <div className="text-[10px] text-slate-400">QR Code / Phone # scanner</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      onOpenRecordIncome();
-                    }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-indigo-300 text-xs flex items-center gap-2.5 transition-colors"
-                  >
-                    <div className="p-1.5 rounded bg-cyan-500/10 text-cyan-400">
-                      <DollarSign className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">Record Giving / Income</div>
-                      <div className="text-[10px] text-slate-400">Offerings, tithes, project funds</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      onOpenExpenseRequest();
-                    }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-indigo-300 text-xs flex items-center gap-2.5 transition-colors"
-                  >
-                    <div className="p-1.5 rounded bg-rose-500/10 text-rose-400">
-                      <DollarSign className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">Submit Expense Request</div>
-                      <div className="text-[10px] text-slate-400">Department / Event requisition</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      onOpenBroadcast();
-                    }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-indigo-300 text-xs flex items-center gap-2.5 transition-colors"
-                  >
-                    <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400">
-                      <Send className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">Send Broadcast</div>
-                      <div className="text-[10px] text-slate-400">SMS / Fellowship announcement</div>
+                      <div className="font-medium">First-Timer Follow-Up</div>
+                      <div className="text-[10px] text-slate-400">Soul care & integration pipeline</div>
                     </div>
                   </button>
                 </div>
@@ -288,24 +223,6 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                         <p className="text-slate-400 text-[11px] mt-0.5">
                           Assigned coordinators should log introductory contact calls.
-                        </p>
-                      </div>
-                    )}
-
-                    {pendingApprovals > 0 && (
-                      <div
-                        onClick={() => {
-                          setActiveTab('finances');
-                          setShowNotifications(false);
-                        }}
-                        className="p-3 hover:bg-slate-800/80 cursor-pointer transition-colors text-xs"
-                      >
-                        <div className="font-semibold text-rose-300 flex items-center gap-1.5">
-                          <DollarSign className="w-3.5 h-3.5" />
-                          {pendingApprovals} Pending Expense Requisitions
-                        </div>
-                        <p className="text-slate-400 text-[11px] mt-0.5">
-                          Treasury approval required for disbursement.
                         </p>
                       </div>
                     )}

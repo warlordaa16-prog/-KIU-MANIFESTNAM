@@ -52,7 +52,6 @@ export const FirstTimerFollowUpManager: React.FC<FirstTimerFollowUpManagerProps>
   const coordinators = members.filter(
     (m) =>
       m.departmentIds?.includes('dept-coordination') ||
-      m.departmentIds?.includes('dept-admin') ||
       m.status === 'Active'
   );
 

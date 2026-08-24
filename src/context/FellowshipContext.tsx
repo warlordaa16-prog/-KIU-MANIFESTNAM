@@ -195,7 +195,18 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // State collections initialized from localStorage or mockData
   const [members, setMembers] = useState<Member[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}members`);
-    return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Member[];
+        return parsed.map((m) => ({
+          ...m,
+          departmentIds: m.departmentIds?.filter((d) => d !== 'dept-admin'),
+        }));
+      } catch {
+        return INITIAL_MEMBERS;
+      }
+    }
+    return INITIAL_MEMBERS;
   });
 
   const [homes, setHomes] = useState<HomeGroup[]>(() => {
@@ -205,7 +216,15 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [departments, setDepartments] = useState<Department[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}departments`);
-    return saved ? JSON.parse(saved) : INITIAL_DEPARTMENTS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Department[];
+        return parsed.filter((d) => d.id !== 'dept-admin' && !d.name.toLowerCase().includes('finance'));
+      } catch {
+        return INITIAL_DEPARTMENTS;
+      }
+    }
+    return INITIAL_DEPARTMENTS;
   });
 
   const [events, setEvents] = useState<FellowshipEvent[]>(() => {

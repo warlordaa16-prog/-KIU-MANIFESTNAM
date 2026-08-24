@@ -15,7 +15,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   onClose,
   onSuccess,
 }) => {
-  const { addMember, homes, departments } = useFellowship();
+  const { addMember, departments } = useFellowship();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -30,7 +30,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
   // Student Info
   const [isStudent, setIsStudent] = useState(true);
-  const [campus, setCampus] = useState('Makerere University - Main Campus');
+  const [campus, setCampus] = useState('KIU - Main Campus (Kansanga)');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [course, setCourse] = useState('');
   const [faculty, setFaculty] = useState('');
@@ -44,7 +44,6 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   );
   const [howFoundManifest, setHowFoundManifest] = useState('Campus Outreach');
   const [invitedBy, setInvitedBy] = useState('');
-  const [selectedHomeId, setSelectedHomeId] = useState('home-sinai');
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -89,7 +88,6 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
       dateOfFirstAttendance,
       howFoundManifest,
       invitedBy: invitedBy.trim() || undefined,
-      homeId: selectedHomeId || undefined,
       departmentIds: selectedDepartmentIds,
       notes: notes.trim() || undefined,
     });
@@ -312,12 +310,15 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                         onChange={(e) => setCampus(e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                       >
-                        <option value="Makerere University - Main Campus">Makerere University - Main Campus</option>
-                        <option value="Makerere University - Mulago CHS">Makerere University - Mulago CHS</option>
-                        <option value="MUBS Nakawa">MUBS Nakawa</option>
-                        <option value="Kyambogo University">Kyambogo University</option>
-                        <option value="UCU Mukono">UCU Mukono</option>
-                        <option value="Other Campus">Other University / College</option>
+                        <option value="KIU - Main Campus (Kansanga)">KIU - Main Campus (Kansanga, Ggaba Rd)</option>
+                        <option value="KIU - School of Law (Kansanga)">KIU - School of Law (Kansanga)</option>
+                        <option value="KIU - School of Pharmacy (Kansanga)">KIU - School of Pharmacy & Biomedical</option>
+                        <option value="KIU - School of Computing & IT">KIU - School of Computing & IT</option>
+                        <option value="KIU - School of Engineering & Applied Sciences">KIU - School of Engineering & Applied Sciences</option>
+                        <option value="KIU - School of Business & Management">KIU - School of Business & Management</option>
+                        <option value="KIU - School of Education & Humanities">KIU - School of Education & Humanities</option>
+                        <option value="KIU - Western Campus (Ishaka / Health Sciences)">KIU - Western Campus (Ishaka / Health Sciences)</option>
+                        <option value="Makindye Division Resident / Other Scholar">Makindye Division Resident / Other Scholar</option>
                       </select>
                     </div>
 
@@ -329,7 +330,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                         type="text"
                         value={registrationNumber}
                         onChange={(e) => setRegistrationNumber(e.target.value)}
-                        placeholder="e.g. 24/U/1209/DAY"
+                        placeholder="e.g. 2024-08-01209"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                       />
                     </div>
@@ -342,18 +343,18 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                         type="text"
                         value={course}
                         onChange={(e) => setCourse(e.target.value)}
-                        placeholder="e.g. BSc Computer Science / Bachelor of Laws"
+                        placeholder="e.g. Bachelor of Laws / BSc Software Engineering / BPharm"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Faculty / College</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Faculty / School</label>
                       <input
                         type="text"
                         value={faculty}
                         onChange={(e) => setFaculty(e.target.value)}
-                        placeholder="e.g. Computing / CEDAT / CHUSS / Business"
+                        placeholder="e.g. School of Law / Computing & IT / Pharmacy / Business"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                       />
                     </div>
@@ -466,25 +467,6 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                   placeholder="e.g. Paul Okello / Self-attended"
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
-              </div>
-
-              {/* Home Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Assigned Home Group (Cell Fellowship)
-                </label>
-                <select
-                  value={selectedHomeId}
-                  onChange={(e) => setSelectedHomeId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                >
-                  <option value="">-- No Home Assigned Yet --</option>
-                  {homes.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name} ({h.zone}) - Lead: {h.leaderName}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Department Interests */}

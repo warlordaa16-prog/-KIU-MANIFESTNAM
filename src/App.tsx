@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FellowshipProvider, useFellowship } from './context/FellowshipContext';
 import { Header } from './components/common/Header';
-import { Sidebar } from './components/common/Sidebar';
+import { BottomTaskbar } from './components/common/BottomTaskbar';
 import { WatermarkBackground } from './components/common/WatermarkBackground';
 import { ThemeWatermarkDrawer } from './components/common/ThemeWatermarkDrawer';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -10,8 +10,9 @@ import { MemberDirectory } from './components/members/MemberDirectory';
 import { MemberRegistrationModal } from './components/members/MemberRegistrationModal';
 import { MemberProfileModal } from './components/members/MemberProfileModal';
 import { MemberIdCardModal } from './components/members/MemberIdCardModal';
-import { FirstTimerFollowUpManager } from './components/followup/FirstTimerFollowUpManager';
+import { FellowshipGroupsManager } from './components/groups/FellowshipGroupsManager';
 import { ReportsManager } from './components/reports/ReportsManager';
+import { PublicLandingPage } from './components/public/PublicLandingPage';
 import { THEME_PRESETS } from './themeConstants';
 import { Member } from './types';
 
@@ -38,13 +39,6 @@ const MainAppContent: React.FC = () => {
     setProfileMember(member);
   };
 
-  const handleOpenProfileById = (memberId: string) => {
-    const found = members.find((m) => m.id === memberId);
-    if (found) {
-      setProfileMember(found);
-    }
-  };
-
   const handleOpenIdCard = (member: Member) => {
     setIdCardMember(member);
   };
@@ -56,6 +50,16 @@ const MainAppContent: React.FC = () => {
       setIdCardMember(newM);
     }
   };
+
+  // If user navigated to Public Landing Page
+  if (activeTab === 'public') {
+    return (
+      <div className="min-h-screen bg-slate-950 font-sans">
+        <PublicLandingPage />
+        <ToastContainer />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${themeConfig.bgClass} flex flex-col font-sans transition-colors duration-500 relative selection:bg-orange-500 selection:text-white`}>
@@ -73,42 +77,32 @@ const MainAppContent: React.FC = () => {
         onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)}
       />
 
-      {/* Main Body with Sidebar + Content */}
-      <div className="flex-1 flex overflow-hidden relative z-10">
-        
-        {/* Navigation Sidebar */}
-        <Sidebar onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)} />
+      {/* Main Dynamic View (Full width without side bar) */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative z-10">
+        <div className="max-w-7xl mx-auto pb-4">
+          {activeTab === 'dashboard' && (
+            <AdminDashboard
+              onOpenRegister={() => setIsRegisterOpen(true)}
+              onSelectMember={handleOpenProfile}
+            />
+          )}
 
-        {/* Dynamic Center Stage Content View */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {activeTab === 'dashboard' && (
-              <AdminDashboard
-                onOpenRegister={() => setIsRegisterOpen(true)}
-                onOpenFollowUp={() => setActiveTab('follow-up')}
-                onSelectMember={handleOpenProfile}
-              />
-            )}
+          {(activeTab === 'members' || activeTab === 'students') && (
+            <MemberDirectory
+              onOpenRegister={() => setIsRegisterOpen(true)}
+              onSelectMember={handleOpenProfile}
+              onViewIdCard={handleOpenIdCard}
+            />
+          )}
 
-            {(activeTab === 'members' || activeTab === 'students') && (
-              <MemberDirectory
-                onOpenRegister={() => setIsRegisterOpen(true)}
-                onSelectMember={handleOpenProfile}
-                onViewIdCard={handleOpenIdCard}
-              />
-            )}
+          {activeTab === 'groups' && <FellowshipGroupsManager />}
 
-            {(activeTab === 'follow-up' || activeTab === 'first-timers') && (
-              <FirstTimerFollowUpManager
-                onOpenRegister={() => setIsRegisterOpen(true)}
-                onSelectMemberById={handleOpenProfileById}
-              />
-            )}
+          {(activeTab === 'reports' || activeTab === 'admin') && <ReportsManager />}
+        </div>
+      </main>
 
-            {(activeTab === 'reports' || activeTab === 'admin') && <ReportsManager />}
-          </div>
-        </main>
-      </div>
+      {/* Bottom Taskbar Navigation */}
+      <BottomTaskbar onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)} />
 
       {/* Theme & Watermark Customization Drawer */}
       <ThemeWatermarkDrawer

@@ -2,7 +2,7 @@ import React from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import {
   Users,
-  HeartHandshake,
+  Layers,
   TrendingUp,
   Plus,
   Sparkles,
@@ -11,22 +11,22 @@ import {
   ChevronRight,
   BookOpen,
   GraduationCap,
+  Home,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
   onOpenRegister?: () => void;
   onSelectMember?: (member: any) => void;
-  onOpenFollowUp?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenRegister,
   onSelectMember,
-  onOpenFollowUp,
 }) => {
   const {
     members = [],
-    followUps = [],
+    departments = [],
+    homes = [],
     auditLogs = [],
     setActiveTab,
   } = useFellowship();
@@ -34,14 +34,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Metrics Calculations
   const totalRegistered = members.length;
   const activeMembers = (members || []).filter((m) => m.status === 'Active').length;
-  const firstTimers = (members || []).filter((m) => m.isFirstTimer || m.status === 'First Timer').length;
   const studentsCount = (members || []).filter((m) => m.studentInfo?.isStudent).length;
-
-  const pendingFollowUps = (followUps || []).filter((f) => f.status === 'Pending' || f.status === 'Assigned');
-
-  // Conversion rate
-  const convertedFollowUps = (followUps || []).filter((f) => f.status === 'Joined' || f.status === 'Completed').length;
-  const conversionRate = followUps.length > 0 ? Math.round((convertedFollowUps / followUps.length) * 100) : 0;
+  const totalGroups = departments.length + homes.length;
 
   // Recent members
   const recentMembers = [...members].reverse().slice(0, 5);
@@ -93,7 +87,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Users className="w-4 h-4 text-orange-400" />
-            Fellowship Community & Soul Care Analytics
+            Fellowship Community Analytics
           </h2>
           <button
             onClick={() => setActiveTab('members')}
@@ -123,21 +117,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* First Timers & Conversion */}
+          {/* Fellowship Groups & Ministry Units */}
           <div
-            onClick={() => setActiveTab('follow-up')}
+            onClick={() => setActiveTab('groups')}
             className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm hover:border-orange-500/50 cursor-pointer transition-colors"
           >
             <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
-              <span className="font-medium">First-Timers</span>
+              <span className="font-medium">Fellowship Groups</span>
               <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-                <Sparkles className="w-4 h-4" />
+                <Layers className="w-4 h-4" />
               </span>
             </div>
-            <div className="text-3xl font-black text-amber-300">{firstTimers}</div>
+            <div className="text-3xl font-black text-amber-300">{totalGroups}</div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-              <span className="text-amber-400 font-semibold">{pendingFollowUps.length} need follow-up</span>
-              <span className="text-slate-300 font-bold">{conversionRate}% integrated</span>
+              <span className="text-amber-400 font-semibold">{departments.length} departments</span>
+              <span className="text-slate-300 font-bold">{homes.length} home cells</span>
             </div>
           </div>
 
@@ -154,62 +148,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="text-3xl font-black text-white">{studentsCount}</div>
             <div className="mt-2 text-xs text-slate-400">
-              {Math.round((studentsCount / (totalRegistered || 1)) * 100)}% campus student demographic
+              {Math.round((studentsCount / (totalRegistered || 1)) * 100)}% KIU student scholars
             </div>
           </div>
 
         </div>
       </div>
 
-      {/* Operational Sections: First-Timer Pipeline & Recent Enrollments */}
+      {/* Operational Sections: Fellowship Groups & Recent Enrollments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
-        {/* First-Timer Follow-Up Priority Queue */}
+        {/* Fellowship Groups Overview */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between shadow-md">
           <div>
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <HeartHandshake className="w-4 h-4 text-orange-400" />
-                <h3 className="font-bold text-sm text-slate-200">First-Timer Soul Care Pipeline</h3>
+                <Layers className="w-4 h-4 text-orange-400" />
+                <h3 className="font-bold text-sm text-slate-200">Fellowship Groups & Ministry Units</h3>
               </div>
               <button
-                onClick={() => setActiveTab('follow-up')}
+                onClick={() => setActiveTab('groups')}
                 className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1"
               >
-                View Pipeline →
+                View Groups →
               </button>
             </div>
 
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {pendingFollowUps.slice(0, 4).map((f) => (
+              {departments.slice(0, 3).map((d) => (
                 <div
-                  key={f.id}
-                  onClick={() => setActiveTab('follow-up')}
+                  key={d.id}
+                  onClick={() => setActiveTab('groups')}
                   className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
                 >
                   <div>
-                    <div className="text-xs font-bold text-slate-200">{f.memberName}</div>
-                    <div className="text-[11px] text-slate-400">{f.memberPhone} • Officer: {f.coordinatorName || 'Assigned'}</div>
+                    <div className="text-xs font-bold text-slate-200">{d.name}</div>
+                    <div className="text-[11px] text-slate-400">Leader: {d.leaderName} • {d.meetingSchedule}</div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                    {f.status}
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Department
                   </span>
                 </div>
               ))}
 
-              {pendingFollowUps.length === 0 && (
-                <div className="p-6 text-center text-slate-500 text-xs">
-                  All first-timers have been followed up and connected!
+              {homes.slice(0, 2).map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => setActiveTab('groups')}
+                  className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-200">{h.name}</div>
+                    <div className="text-[11px] text-slate-400">{h.location} • {h.meetingDay}</div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                    Home Cell
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 
           <button
-            onClick={() => setActiveTab('follow-up')}
+            onClick={() => setActiveTab('groups')}
             className="w-full mt-4 py-2.5 text-center text-xs text-slate-400 hover:text-orange-300 font-semibold border-t border-slate-800"
           >
-            Open First-Timers & Pastoral Care Center →
+            Manage Departments & Home Fellowships →
           </button>
         </div>
 
@@ -230,9 +234,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {recentMembers.map((member) => (
+              {recentMembers.map((member, idx) => (
                 <div
-                  key={member.id}
+                  key={`${member.id}-${idx}`}
                   onClick={() => onSelectMember && onSelectMember(member)}
                   className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
                 >
@@ -287,9 +291,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div className="space-y-2.5 max-h-72 overflow-y-auto">
-          {auditLogs.slice(0, 6).map((log) => (
+          {auditLogs.slice(0, 6).map((log, idx) => (
             <div
-              key={log.id}
+              key={`${log.id}-${idx}`}
               className="p-3 rounded-xl bg-slate-850 border border-slate-800/80 flex items-start justify-between gap-3 text-xs"
             >
               <div className="flex items-start gap-2.5">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import { Member, MemberStatus } from '../../types';
+import { exportMembersToCsv } from '../../utils/exportUtils';
 import {
   Users,
   Search,
@@ -27,6 +28,8 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
 }) => {
   const {
     members,
+    homes = [],
+    departments = [],
     searchQuery,
     setSearchQuery,
   } = useFellowship();
@@ -68,50 +71,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   const today = new Date().toISOString().split('T')[0];
 
   const exportMembersCsv = () => {
-    const headers = [
-      'Member ID',
-      'Full Name',
-      'Preferred Name',
-      'Gender',
-      'Phone',
-      'Email',
-      'Status',
-      'Is Student',
-      'Campus',
-      'Course',
-      'Year of Study',
-      'Registration Number',
-      'Residence',
-      'Registration Date',
-    ];
-
-    const rows = filteredMembers.map((m) => {
-      return [
-        m.id,
-        `"${m.fullName}"`,
-        `"${m.preferredName || ''}"`,
-        m.gender,
-        m.phone,
-        m.email,
-        m.status,
-        m.studentInfo?.isStudent ? 'Yes' : 'No',
-        `"${m.studentInfo?.campus || ''}"`,
-        `"${m.studentInfo?.course || ''}"`,
-        m.studentInfo?.yearOfStudy || '',
-        `"${m.studentInfo?.registrationNumber || ''}"`,
-        `"${m.residence || 'Kansanga'}"`,
-        m.registrationDate,
-      ];
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `manifest_kiu_members_${today}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportMembersToCsv(filteredMembers, homes, departments, `manifest_kiu_members_${today}.csv`);
   };
 
   const residences = ['Kansanga', 'Kabalagala', 'Ggaba', 'Bunga', 'Nsambya', 'Luwafu', 'Makindye Division'];
@@ -189,7 +149,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
               onChange={(e) => setStudentFilter(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500"
             >
-              <option value="All">All Demographics</option>
+              <option value="All">All Profiles (Students & Working)</option>
               <option value="Students">University Students</option>
               <option value="Non-Students">Non-Students / Working</option>
             </select>

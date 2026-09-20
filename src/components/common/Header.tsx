@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Download,
   Users,
+  Layers,
   Award,
   Palette,
 } from 'lucide-react';
@@ -34,7 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
     setCurrentUserName,
     searchQuery,
     setSearchQuery,
-    followUps = [],
     setActiveTab,
     exportBackupJson,
     currentTheme,
@@ -47,13 +47,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const pendingFollowUps = (followUps || []).filter((f) => f.status === 'Pending' || f.status === 'Assigned').length;
-  const totalNotifications = pendingFollowUps;
+  const totalNotifications = 0;
 
   const roles: { role: UserRole; label: string; desc: string }[] = [
     { role: 'Super Admin', label: 'Super Admin', desc: 'Full unrestricted system access' },
     { role: 'Fellowship Admin', label: 'Fellowship Admin', desc: 'General fellowship operations & members' },
-    { role: 'Coordinator', label: 'Follow-Up Coordinator', desc: 'First-timer care & integration pipeline' },
+    { role: 'Coordinator', label: 'Fellowship Coordinator', desc: 'Fellowship activities & community coordination' },
     { role: 'Auditor', label: 'Auditor', desc: 'Read-only operational audit logs' },
     { role: 'Member', label: 'Fellowship Member', desc: 'Personal ID pass & fellowship activities' },
   ];
@@ -165,16 +164,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setShowQuickActions(false);
-                      setActiveTab('follow-up');
+                      setActiveTab('groups');
                     }}
                     className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-orange-300 text-xs flex items-center gap-2.5 transition-colors"
                   >
                     <div className="p-1.5 rounded bg-orange-500/10 text-orange-400">
-                      <UserCheck className="w-3.5 h-3.5" />
+                      <Layers className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="font-medium">First-Timer Follow-Up</div>
-                      <div className="text-[10px] text-slate-400">Soul care & integration pipeline</div>
+                      <div className="font-medium">Fellowship Groups</div>
+                      <div className="text-[10px] text-slate-400">Departments & home fellowships</div>
                     </div>
                   </button>
                 </div>
@@ -204,34 +203,12 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="px-3 py-1.5 text-xs font-bold text-slate-300 border-b border-slate-800 flex items-center justify-between">
                     <span>Operational Alerts</span>
                     <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">
-                      {totalNotifications} pending
+                      0 pending
                     </span>
                   </div>
 
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-800/60">
-                    {pendingFollowUps > 0 && (
-                      <div
-                        onClick={() => {
-                          setActiveTab('follow-up');
-                          setShowNotifications(false);
-                        }}
-                        className="p-3 hover:bg-slate-800/80 cursor-pointer transition-colors text-xs"
-                      >
-                        <div className="font-semibold text-indigo-300 flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5" />
-                          {pendingFollowUps} First-Timers Awaiting Follow-Up
-                        </div>
-                        <p className="text-slate-400 text-[11px] mt-0.5">
-                          Assigned coordinators should log introductory contact calls.
-                        </p>
-                      </div>
-                    )}
-
-                    {totalNotifications === 0 && (
-                      <div className="p-4 text-center text-slate-500 text-xs">
-                        All workflows current! No pending bottlenecks.
-                      </div>
-                    )}
+                  <div className="p-4 text-center text-slate-500 text-xs">
+                    All workflows current! No pending bottlenecks.
                   </div>
                 </div>
               )}

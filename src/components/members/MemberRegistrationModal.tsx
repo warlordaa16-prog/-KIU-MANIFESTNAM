@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import { Gender, MemberStatus } from '../../types';
-import { X, Sparkles, User, GraduationCap, Heart, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  X,
+  Sparkles,
+  User,
+  GraduationCap,
+  Heart,
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  MapPin,
+  Phone,
+  KeyRound,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface MemberRegistrationModalProps {
@@ -19,11 +31,17 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Form State
-  const [fullName, setFullName] = useState('');
+  // Core Required Registration PIN Fields
+  const [lastName, setLastName] = useState(''); // Name (Surname)
+  const [firstName, setFirstName] = useState(''); // First Name
+  const [phone, setPhone] = useState('+256 '); // Phone Contact
+  const [yearOfStudy, setYearOfStudy] = useState(1); // Year of Study
+  const [hostelOrResidence, setHostelOrResidence] = useState('Olympia Hostel, Kansanga'); // Hostel or Residence
+  const [customHostel, setCustomHostel] = useState('');
+
+  // Additional Details
   const [preferredName, setPreferredName] = useState('');
   const [gender, setGender] = useState<Gender>('Male');
-  const [phone, setPhone] = useState('+256 ');
   const [altPhone, setAltPhone] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -34,7 +52,6 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [course, setCourse] = useState('');
   const [faculty, setFaculty] = useState('');
-  const [yearOfStudy, setYearOfStudy] = useState(1);
   const [expectedGraduationYear, setExpectedGraduationYear] = useState(2028);
 
   // Fellowship Info
@@ -57,23 +74,31 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
     }
   };
 
+  const effectiveHostel =
+    hostelOrResidence === 'Other' ? customHostel.trim() || 'Kansanga' : hostelOrResidence;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !phone.trim()) {
-      alert('Please fill in Full Name and Phone Number.');
+    if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
+      alert('Please fill in Name (Surname), First Name, and Phone Contact.');
       return;
     }
 
+    const fullName = `${lastName.trim()} ${firstName.trim()}`;
     const isFirstTimer = status === 'First Timer';
 
     const newMember = addMember({
-      fullName: fullName.trim(),
-      preferredName: preferredName.trim() || undefined,
+      fullName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      preferredName: preferredName.trim() || firstName.trim(),
       gender,
       phone: phone.trim(),
       altPhone: altPhone.trim() || undefined,
-      email: email.trim() || `${fullName.toLowerCase().replace(/\s+/g, '.')}@manifest.org`,
+      email: email.trim() || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@manifest.org`,
       dateOfBirth: dateOfBirth || undefined,
+      hostelOrResidence: effectiveHostel,
+      residence: effectiveHostel.split(',')[0],
       studentInfo: {
         isStudent,
         campus: isStudent ? campus : 'Non-Student / Working Professional',
@@ -99,7 +124,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
         spread: 60,
         origin: { y: 0.6 },
       });
-    } catch (e) {
+    } catch (err) {
       // Ignore if unavailable
     }
 
@@ -114,14 +139,14 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <Sparkles className="w-4 h-4" />
+              <KeyRound className="w-4 h-4" />
             </div>
             <div>
               <h2 className="font-extrabold text-white text-base tracking-tight">
-                Manifest Member Fast-Track Registration
+                Manifest Member Fast Registration & PIN Issuer
               </h2>
               <p className="text-xs text-slate-400">
-                Automated unique ID assignment & first-timer follow-up workflow (&lt; 2 minutes)
+                Issues unique Registration PIN with Name, First Name, Year of Study, Hostel/Residence & Phone
               </p>
             </div>
           </div>
@@ -144,7 +169,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">1</span>
-            <span>Personal Info</span>
+            <span>Registration PIN Fields</span>
           </button>
           <div className="w-8 h-0.5 bg-slate-800" />
           <button
@@ -155,7 +180,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">2</span>
-            <span>Student Profile</span>
+            <span>Academic Profile</span>
           </button>
           <div className="w-8 h-0.5 bg-slate-800" />
           <button
@@ -166,51 +191,147 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">3</span>
-            <span>Fellowship & Home</span>
+            <span>Fellowship Placement</span>
           </button>
         </div>
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
           
-          {/* STEP 1: PERSONAL INFORMATION */}
+          {/* STEP 1: REGISTRATION PIN CORE FIELDS */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
-                Step 1: Personal Identification
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-300">
+                    Registration PIN Information
+                  </span>
+                </div>
+                <span className="text-[10px] text-amber-400/80 font-mono">
+                  All 5 Core PIN Fields
+                </span>
               </div>
 
+              {/* Name (Surname) and First Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Full Legal Name <span className="text-rose-400">*</span>
+                    Name (Surname / Last Name) <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Mugisha Brian"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="e.g. Mugisha"
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Preferred / Nickname
+                    First Name <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
-                    value={preferredName}
-                    onChange={(e) => setPreferredName(e.target.value)}
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     placeholder="e.g. Brian"
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {/* Phone Contact & Year of Study */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-yellow-400" />
+                    Phone Contact (WhatsApp/Call) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+256 701 892341"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <GraduationCap className="w-3 h-3 text-cyan-400" />
+                    Year of Study <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={yearOfStudy}
+                    onChange={(e) => setYearOfStudy(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-semibold text-cyan-300"
+                  >
+                    <option value={1}>Year 1 (Fresher)</option>
+                    <option value={2}>Year 2</option>
+                    <option value={3}>Year 3</option>
+                    <option value={4}>Year 4</option>
+                    <option value={5}>Year 5 (Medicine / Engineering)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Hostel or Residence */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-emerald-400" />
+                  Hostel or Residence <span className="text-rose-400">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={hostelOrResidence}
+                    onChange={(e) => setHostelOrResidence(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium text-emerald-300"
+                  >
+                    <optgroup label="KIU Kansanga Hostels">
+                      <option value="Olympia Hostel, Kansanga">Olympia Hostel, Kansanga</option>
+                      <option value="Nana Hostel, Kansanga">Nana Hostel, Kansanga</option>
+                      <option value="Akamwesi Hostel, Kansanga">Akamwesi Hostel, Kansanga</option>
+                      <option value="Prestige Hostel, Kansanga">Prestige Hostel, Kansanga</option>
+                      <option value="Ideal Hostel, Kansanga">Ideal Hostel, Kansanga</option>
+                      <option value="Douglas Villa Hostel, Kansanga">Douglas Villa Hostel, Kansanga</option>
+                      <option value="Valley Courts Hostel, Kansanga">Valley Courts Hostel, Kansanga</option>
+                      <option value="Dream World Hostels, Kansanga">Dream World Hostels, Kansanga</option>
+                      <option value="Kalungi Plaza Hostels, Kansanga">Kalungi Plaza Hostels, Kansanga</option>
+                      <option value="JJ Hostel, Kansanga">JJ Hostel, Kansanga</option>
+                    </optgroup>
+                    <optgroup label="Makindye & Kampala Residential">
+                      <option value="Kansanga Trading Center">Kansanga Trading Center</option>
+                      <option value="Kabalagala">Kabalagala</option>
+                      <option value="Ggaba Road / Ggaba">Ggaba Road / Ggaba</option>
+                      <option value="Bunga Hill">Bunga Hill</option>
+                      <option value="Nsambya">Nsambya</option>
+                      <option value="Makindye Hill / Kizungu">Makindye Hill / Kizungu</option>
+                      <option value="Lukuli Nanganda">Lukuli Nanganda</option>
+                      <option value="Munyonyo">Munyonyo</option>
+                    </optgroup>
+                    <option value="Other">Other / Enter Custom Hostel</option>
+                  </select>
+
+                  {hostelOrResidence === 'Other' && (
+                    <input
+                      type="text"
+                      required
+                      value={customHostel}
+                      onChange={(e) => setCustomHostel(e.target.value)}
+                      placeholder="Enter hostel name or area..."
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Personal Details */}
+              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
                   <select
@@ -225,33 +346,17 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Primary Phone (WhatsApp) <span className="text-rose-400">*</span>
+                    Preferred / Nickname
                   </label>
                   <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+256 700 000000"
+                    type="text"
+                    value={preferredName}
+                    onChange={(e) => setPreferredName(e.target.value)}
+                    placeholder="e.g. Brian"
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Alternative Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={altPhone}
-                    onChange={(e) => setAltPhone(e.target.value)}
-                    placeholder="+256 770 000000"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     Email Address
@@ -260,27 +365,15 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="brian.mugisha@gmail.com"
+                    placeholder="brian.mugi@gmail.com"
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Date of Birth (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 2: STUDENT INFORMATION */}
+          {/* STEP 2: STUDENT & ACADEMIC INFORMATION */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
@@ -366,7 +459,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                       <select
                         value={yearOfStudy}
                         onChange={(e) => setYearOfStudy(Number(e.target.value))}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-semibold text-cyan-300"
                       >
                         <option value={1}>Year 1 (Fresher)</option>
                         <option value={2}>Year 2</option>
@@ -402,12 +495,12 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             </div>
           )}
 
-          {/* STEP 3: FELLOWSHIP & HOME ASSIGNMENT */}
+          {/* STEP 3: FELLOWSHIP PLACEMENT & FIRST TIMER WORKFLOW */}
           {step === 3 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Heart className="w-3.5 h-3.5" />
-                Step 3: Fellowship Integration & Home Placement
+                Step 3: Fellowship Integration & Placement
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -498,7 +591,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
               {/* Notes */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  General / Follow-Up Notes
+                  General / Pastoral Notes
                 </label>
                 <textarea
                   rows={2}
@@ -513,7 +606,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
                   <div>
-                    <span className="font-bold">Automated Follow-Up Workflow will trigger:</span> A follow-up file will be opened automatically, coordinator assigned, and personal outreach scheduled.
+                    <span className="font-bold">First-Timer Welcome Protocol:</span> A digital Registration PIN pass and membership profile will be generated instantly for immediate scanning and verification.
                   </div>
                 </div>
               )}
@@ -548,7 +641,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                 className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all active:scale-95"
               >
                 <CheckCircle className="w-4 h-4" />
-                <span>Complete Fast Registration & Issue MAN ID</span>
+                <span>Register Member & Issue Registration PIN</span>
               </button>
             )}
           </div>

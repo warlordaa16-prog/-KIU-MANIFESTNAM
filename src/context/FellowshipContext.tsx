@@ -5,8 +5,6 @@ import {
   Department,
   FellowshipEvent,
   AttendanceRecord,
-  FollowUpRecord,
-  FollowUpInteraction,
   IncomeRecord,
   ExpenseRecord,
   Budget,
@@ -23,7 +21,6 @@ import {
   INITIAL_DEPARTMENTS,
   INITIAL_EVENTS,
   INITIAL_ATTENDANCE,
-  INITIAL_FOLLOW_UPS,
   INITIAL_INCOME,
   INITIAL_EXPENSES,
   INITIAL_BUDGETS,
@@ -58,7 +55,6 @@ interface FellowshipContextType {
   departments: Department[];
   events: FellowshipEvent[];
   attendance: AttendanceRecord[];
-  followUps: FollowUpRecord[];
   income: IncomeRecord[];
   expenses: ExpenseRecord[];
   budgets: Budget[];
@@ -91,12 +87,6 @@ interface FellowshipContextType {
     status: AttendanceStatus,
     recordedBy: string,
     checkInMethod: AttendanceRecord['checkInMethod']
-  ) => void;
-
-  updateFollowUp: (id: string, updates: Partial<FollowUpRecord>) => void;
-  addFollowUpInteraction: (
-    followUpId: string,
-    interaction: Omit<FollowUpInteraction, 'id' | 'date'>
   ) => void;
 
   addIncome: (incomeData: Omit<IncomeRecord, 'id'>) => IncomeRecord;
@@ -148,6 +138,27 @@ const FellowshipContext = createContext<FellowshipContextType | undefined>(undef
 
 const STORAGE_PREFIX = 'mfms_v1_';
 
+// Helper to guarantee globally unique IDs across rapid sync operations and sessions
+const makeUniqueId = (prefix: string): string => {
+  const ts = Date.now().toString(36);
+  const rand = Math.random().toString(36).substring(2, 8);
+  const counter = Math.floor(Math.random() * 10000).toString(36);
+  return `${prefix}-${ts}-${counter}-${rand}`;
+};
+
+const sanitizeItemsWithUniqueIds = <T extends { id: string }>(items: T[], prefix: string): T[] => {
+  const seenIds = new Set<string>();
+  return items.map((item) => {
+    if (!item.id || seenIds.has(item.id)) {
+      const newId = makeUniqueId(prefix);
+      seenIds.add(newId);
+      return { ...item, id: newId };
+    }
+    seenIds.add(item.id);
+    return item;
+  });
+};
+
 export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUserRole, setCurrentUserRoleState] = useState<UserRole>(() => {
     return (localStorage.getItem(`${STORAGE_PREFIX}role`) as UserRole) || 'Super Admin';
@@ -198,7 +209,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Member[];
-        return parsed.map((m) => ({
+        const sanitized = sanitizeItemsWithUniqueIds(parsed, 'MAN');
+        return sanitized.map((m) => ({
           ...m,
           departmentIds: m.departmentIds?.filter((d) => d !== 'dept-admin'),
         }));
@@ -211,7 +223,14 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [homes, setHomes] = useState<HomeGroup[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}homes`);
-    return saved ? JSON.parse(saved) : INITIAL_HOMES;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'home');
+      } catch {
+        return INITIAL_HOMES;
+      }
+    }
+    return INITIAL_HOMES;
   });
 
   const [departments, setDepartments] = useState<Department[]>(() => {
@@ -229,47 +248,98 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [events, setEvents] = useState<FellowshipEvent[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}events`);
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'evt');
+      } catch {
+        return INITIAL_EVENTS;
+      }
+    }
+    return INITIAL_EVENTS;
   });
 
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}attendance`);
-    return saved ? JSON.parse(saved) : INITIAL_ATTENDANCE;
-  });
-
-  const [followUps, setFollowUps] = useState<FollowUpRecord[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}followUps`);
-    return saved ? JSON.parse(saved) : INITIAL_FOLLOW_UPS;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'att');
+      } catch {
+        return INITIAL_ATTENDANCE;
+      }
+    }
+    return INITIAL_ATTENDANCE;
   });
 
   const [income, setIncome] = useState<IncomeRecord[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}income`);
-    return saved ? JSON.parse(saved) : INITIAL_INCOME;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'inc');
+      } catch {
+        return INITIAL_INCOME;
+      }
+    }
+    return INITIAL_INCOME;
   });
 
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}expenses`);
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'exp');
+      } catch {
+        return INITIAL_EXPENSES;
+      }
+    }
+    return INITIAL_EXPENSES;
   });
 
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}budgets`);
-    return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'bdg');
+      } catch {
+        return INITIAL_BUDGETS;
+      }
+    }
+    return INITIAL_BUDGETS;
   });
 
   const [projects, setProjects] = useState<FinancialProject[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}projects`);
-    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'proj');
+      } catch {
+        return INITIAL_PROJECTS;
+      }
+    }
+    return INITIAL_PROJECTS;
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}auditLogs`);
-    return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'aud');
+      } catch {
+        return INITIAL_AUDIT_LOGS;
+      }
+    }
+    return INITIAL_AUDIT_LOGS;
   });
 
   const [messages, setMessages] = useState<CommunicationMessage[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}messages`);
-    return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
+    if (saved) {
+      try {
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'msg');
+      } catch {
+        return INITIAL_MESSAGES;
+      }
+    }
+    return INITIAL_MESSAGES;
   });
 
   // Sync to local storage
@@ -292,10 +362,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
   }, [attendance]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}followUps`, JSON.stringify(followUps));
-  }, [followUps]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}income`, JSON.stringify(income));
@@ -328,7 +394,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'info') => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const id = makeUniqueId('toast');
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       removeToast(id);
@@ -342,7 +408,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addAuditLog = (log: Omit<AuditLog, 'id' | 'timestamp'>) => {
     const newLog: AuditLog = {
       ...log,
-      id: `aud-${Date.now().toString().slice(-6)}`,
+      id: makeUniqueId('aud'),
       timestamp: new Date().toISOString(),
       userName: log.userName || currentUserName,
       userRole: log.userRole || currentUserRole,
@@ -357,12 +423,20 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Generate next MAN member ID
   const generateMemberId = (): string => {
     const currentYear = new Date().getFullYear();
-    const count = members.length + 1;
-    const padded = String(count).padStart(6, '0');
+    let maxNum = 0;
+    members.forEach((m) => {
+      const match = m.id.match(/^MAN-\d{4}-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const nextNum = Math.max(members.length + 1, maxNum + 1);
+    const padded = String(nextNum).padStart(6, '0');
     return `MAN-${currentYear}-${padded}`;
   };
 
-  // Add Member with Automated First-Timer Pipeline
+  // Add Member
   const addMember = (
     memberData: Omit<Member, 'id' | 'registrationDate'>,
     autoOnboardFirstTimer = true
@@ -387,52 +461,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       userRole: currentUserRole,
     });
 
-    // Automated First-Timer Workflow Integration
     if (newMember.isFirstTimer || newMember.status === 'First Timer') {
-      const followUpId = `fol-2026-${String(followUps.length + 1).padStart(3, '0')}`;
-      
-      // Auto-assign default coordinator or lead
-      const defaultCoordinator = members.find((m) => m.departmentIds?.includes('dept-coordination')) || members[0];
-      
-      const newFollowUp: FollowUpRecord = {
-        id: followUpId,
-        memberId: id,
-        memberName: newMember.fullName,
-        phone: newMember.phone,
-        dateOfVisit: newMember.dateOfFirstAttendance || today,
-        invitedBy: newMember.invitedBy || 'Campus Outreach / Walk-in',
-        coordinatorId: defaultCoordinator ? defaultCoordinator.id : undefined,
-        coordinatorName: defaultCoordinator ? defaultCoordinator.fullName : 'Coordination Ministry',
-        status: 'Assigned',
-        notes: `Automated follow-up initialized on registration. First visit on ${newMember.dateOfFirstAttendance || today}. Interested in ${newMember.homeId ? 'Home fellowship' : 'community'}.`,
-        nextFollowUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days later
-        assignedHomeId: newMember.homeId,
-        interactions: [
-          {
-            id: `int-${Date.now().toString().slice(-4)}`,
-            date: today,
-            coordinatorId: defaultCoordinator ? defaultCoordinator.id : 'SYS',
-            coordinatorName: defaultCoordinator ? defaultCoordinator.fullName : 'System Automation',
-            action: 'WhatsApp / SMS',
-            result: `Automated welcome dispatched: Assigned follow-up officer ${defaultCoordinator ? defaultCoordinator.fullName : 'Coordination'}.`,
-            nextFollowUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          },
-        ],
-      };
-
-      setFollowUps((prev) => [newFollowUp, ...prev]);
-
-      addAuditLog({
-        module: 'Follow-Up',
-        action: 'First Timer Follow-Up Auto-Created',
-        targetEntityId: followUpId,
-        details: `Auto-created follow-up file ${followUpId} and assigned to ${defaultCoordinator?.fullName || 'Coordination'} for ${newMember.fullName}.`,
-        result: 'Success',
-        userName: currentUserName,
-        userRole: currentUserRole,
-      });
-
-      showToast(`✨ Member registered! Unique ID: ${id}. First-Timer Follow-Up automated.`, 'success');
+      showToast(`✨ First-Timer welcomed! Unique ID: ${id}.`, 'success');
     } else {
       showToast(`Member registered successfully! Assigned ID: ${id}`, 'success');
     }
@@ -480,7 +510,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const addHome = (homeData: Omit<HomeGroup, 'id'>): HomeGroup => {
-    const id = `home-${homeData.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString().slice(-4)}`;
+    const slug = homeData.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+    const id = `home-${slug}-${makeUniqueId('h')}`;
     const newHome: HomeGroup = { ...homeData, id };
     setHomes((prev) => [...prev, newHome]);
     addAuditLog({
@@ -507,7 +538,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const addEvent = (eventData: Omit<FellowshipEvent, 'id'>): FellowshipEvent => {
-    const id = `evt-${new Date().getFullYear()}-${String(events.length + 1).padStart(2, '0')}`;
+    const id = `evt-${new Date().getFullYear()}-${String(events.length + 1).padStart(2, '0')}-${makeUniqueId('e').slice(-4)}`;
     const newEvent: FellowshipEvent = { ...eventData, id, actualAttendanceCount: 0 };
     setEvents((prev) => [newEvent, ...prev]);
     addAuditLog({
@@ -546,7 +577,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return existing;
     }
 
-    const id = `att-${Date.now().toString().slice(-6)}`;
+    const id = makeUniqueId('att');
     const newRecord: AttendanceRecord = {
       ...recordData,
       id,
@@ -604,7 +635,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       if (!already) {
         newRecords.push({
-          id: `att-${Date.now().toString().slice(-4)}-${Math.random().toString(36).substring(2, 5)}`,
+          id: makeUniqueId('att'),
           memberId: member.id,
           memberName: member.fullName,
           memberPhone: member.phone,
@@ -646,53 +677,18 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const updateFollowUp = (id: string, updates: Partial<FollowUpRecord>) => {
-    setFollowUps((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
-    showToast(`Updated follow-up status`, 'info');
-  };
-
-  const addFollowUpInteraction = (
-    followUpId: string,
-    interaction: Omit<FollowUpInteraction, 'id' | 'date'>
-  ) => {
-    const today = new Date().toISOString().split('T')[0];
-    const newInteraction: FollowUpInteraction = {
-      ...interaction,
-      id: `int-${Date.now().toString().slice(-4)}`,
-      date: today,
-    };
-
-    setFollowUps((prev) =>
-      prev.map((f) => {
-        if (f.id === followUpId) {
-          return {
-            ...f,
-            interactions: [newInteraction, ...f.interactions],
-            nextFollowUpDate: interaction.nextFollowUpDate || f.nextFollowUpDate,
-            status: f.status === 'Assigned' || f.status === 'Pending' ? 'Contacted' : f.status,
-          };
-        }
-        return f;
-      })
-    );
-
-    addAuditLog({
-      module: 'Follow-Up',
-      action: 'Interaction Logged',
-      targetEntityId: followUpId,
-      details: `${interaction.action} logged by ${interaction.coordinatorName}. Next follow-up: ${interaction.nextFollowUpDate || 'None'}`,
-      result: 'Success',
-      userName: currentUserName,
-      userRole: currentUserRole,
-    });
-
-    showToast(`Interaction logged for follow-up case ${followUpId}`, 'success');
-  };
-
   // Financial Actions
   const addIncome = (incomeData: Omit<IncomeRecord, 'id'>): IncomeRecord => {
-    const count = income.length + 1;
-    const id = `TXN-INC-2026-${String(count).padStart(3, '0')}`;
+    let maxNum = 0;
+    income.forEach((i) => {
+      const match = i.id.match(/^TXN-INC-\d{4}-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const count = Math.max(income.length + 1, maxNum + 1);
+    const id = `TXN-INC-${new Date().getFullYear()}-${String(count).padStart(3, '0')}`;
     const newIncome: IncomeRecord = { ...incomeData, id };
 
     setIncome((prev) => [newIncome, ...prev]);
@@ -726,8 +722,16 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     expenseData: Omit<ExpenseRecord, 'id' | 'status'>,
     submitForApproval = true
   ): ExpenseRecord => {
-    const count = expenses.length + 1;
-    const id = `TXN-EXP-2026-${String(count).padStart(3, '0')}`;
+    let maxNum = 0;
+    expenses.forEach((e) => {
+      const match = e.id.match(/^TXN-EXP-\d{4}-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const count = Math.max(expenses.length + 1, maxNum + 1);
+    const id = `TXN-EXP-${new Date().getFullYear()}-${String(count).padStart(3, '0')}`;
     const newExpense: ExpenseRecord = {
       ...expenseData,
       id,
@@ -965,7 +969,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setDepartments(INITIAL_DEPARTMENTS);
     setEvents(INITIAL_EVENTS);
     setAttendance(INITIAL_ATTENDANCE);
-    setFollowUps(INITIAL_FOLLOW_UPS);
     setIncome(INITIAL_INCOME);
     setExpenses(INITIAL_EXPENSES);
     setBudgets(INITIAL_BUDGETS);
@@ -985,7 +988,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       departments,
       events,
       attendance,
-      followUps,
       income,
       expenses,
       budgets,
@@ -1011,7 +1013,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (data.departments) setDepartments(data.departments);
       if (data.events) setEvents(data.events);
       if (data.attendance) setAttendance(data.attendance);
-      if (data.followUps) setFollowUps(data.followUps);
       if (data.income) setIncome(data.income);
       if (data.expenses) setExpenses(data.expenses);
       if (data.budgets) setBudgets(data.budgets);
@@ -1040,11 +1041,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (module === 'Attendance') {
       if (currentUserRole === 'Attendance Officer' || currentUserRole === 'Coordinator') return true;
-      return true;
-    }
-
-    if (module === 'Follow-Up') {
-      if (currentUserRole === 'Coordinator' || currentUserRole === 'Homes Leader') return true;
       return true;
     }
 
@@ -1077,7 +1073,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         departments,
         events,
         attendance,
-        followUps,
         income,
         expenses,
         budgets,
@@ -1094,8 +1089,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         updateEvent,
         recordAttendance,
         batchCheckIn,
-        updateFollowUp,
-        addFollowUpInteraction,
         addIncome,
         addExpense,
         approveExpense,

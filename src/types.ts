@@ -34,14 +34,17 @@ export interface StudentProfile {
 export interface Member {
   id: string; // MAN-2026-000001
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   preferredName?: string;
   gender: Gender;
-  phone: string;
+  phone: string; // Phone contact
   altPhone?: string;
   email: string;
   dateOfBirth?: string;
   profilePhoto?: string;
   residence?: string; // e.g. 'Kansanga', 'Kabalagala', 'Ggaba', 'Bunga'
+  hostelOrResidence?: string; // e.g. 'Olympia Hostel', 'Nana Hostel', 'Akamwesi Hostel', 'Ideal Hostel', 'Douglas Villa', 'Kansanga'
   
   // Student Profile
   studentInfo: StudentProfile;
@@ -75,43 +78,6 @@ export interface AttendanceRecord {
   recordedBy: string;
   notes?: string;
   checkInMethod: 'QR Code' | 'Phone Lookup' | 'Member ID' | 'Manual Roster';
-}
-
-export type FollowUpStatus =
-  | 'Pending'
-  | 'Assigned'
-  | 'Contacted'
-  | 'Responded'
-  | 'Joined'
-  | 'No Response'
-  | 'Not Interested'
-  | 'Needs Further Follow-Up'
-  | 'Completed';
-
-export interface FollowUpInteraction {
-  id: string;
-  date: string;
-  coordinatorId: string;
-  coordinatorName: string;
-  action: 'Phone Call' | 'WhatsApp / SMS' | 'Physical Visit' | 'In-Person Conversation' | 'Email';
-  result: string;
-  nextFollowUpDate?: string;
-}
-
-export interface FollowUpRecord {
-  id: string;
-  memberId: string;
-  memberName: string;
-  phone: string;
-  dateOfVisit: string;
-  invitedBy?: string;
-  coordinatorId?: string;
-  coordinatorName?: string;
-  status: FollowUpStatus;
-  notes: string;
-  nextFollowUpDate?: string;
-  interactions: FollowUpInteraction[];
-  assignedHomeId?: string;
 }
 
 export interface HomeGroup {
@@ -283,7 +249,7 @@ export interface AuditLog {
   timestamp: string;
   userName: string;
   userRole: UserRole;
-  module: 'Members' | 'Attendance' | 'Follow-Up' | 'Finance' | 'Events' | 'Homes' | 'Departments' | 'System';
+  module: 'Members' | 'Attendance' | 'Finance' | 'Events' | 'Homes' | 'Departments' | 'System';
   action: string;
   targetEntityId?: string;
   details: string;

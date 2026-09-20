@@ -77,7 +77,7 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   recordedBy: string;
   notes?: string;
-  checkInMethod: 'QR Code' | 'Phone Lookup' | 'Member ID' | 'Manual Roster';
+  checkInMethod: 'QR Code' | 'Phone Lookup' | 'Member ID' | 'Manual Check-in' | 'Manual Roster';
 }
 
 export interface HomeGroup {

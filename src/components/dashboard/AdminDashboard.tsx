@@ -76,7 +76,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 font-semibold text-xs transition-all active:scale-95"
             >
               <Users className="w-4 h-4 text-orange-400" />
-              <span>Member Roster</span>
+              <span>Member Directory</span>
             </button>
           </div>
         </div>
@@ -174,39 +174,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
 
-            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {departments.slice(0, 3).map((d) => (
-                <div
-                  key={d.id}
+            {departments.length === 0 && homes.length === 0 ? (
+              <div className="py-7 px-4 text-center rounded-xl bg-slate-950/60 border border-slate-800/80 my-2">
+                <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-300">No fellowship groups yet</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Define your custom Home Cells and Ministry Departments</p>
+                <button
                   onClick={() => setActiveTab('groups')}
-                  className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
+                  className="mt-3 px-3.5 py-1.5 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/30 text-xs font-bold hover:bg-orange-500/30 transition-colors"
                 >
-                  <div>
-                    <div className="text-xs font-bold text-slate-200">{d.name}</div>
-                    <div className="text-[11px] text-slate-400">Leader: {d.leaderName} • {d.meetingSchedule}</div>
+                  + Add First Group
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {departments.slice(0, 3).map((d) => (
+                  <div
+                    key={d.id}
+                    onClick={() => setActiveTab('groups')}
+                    className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-200">{d.name}</div>
+                      <div className="text-[11px] text-slate-400">Leader: {d.leaderName} • {d.meetingSchedule}</div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Department
+                    </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    Department
-                  </span>
-                </div>
-              ))}
+                ))}
 
-              {homes.slice(0, 2).map((h) => (
-                <div
-                  key={h.id}
-                  onClick={() => setActiveTab('groups')}
-                  className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-200">{h.name}</div>
-                    <div className="text-[11px] text-slate-400">{h.location} • {h.meetingDay}</div>
+                {homes.slice(0, 2).map((h) => (
+                  <div
+                    key={h.id}
+                    onClick={() => setActiveTab('groups')}
+                    className="p-3 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-800 cursor-pointer transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-200">{h.name}</div>
+                      <div className="text-[11px] text-slate-400">{h.location} • {h.meetingDay}</div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                      Home Cell
+                    </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                    Home Cell
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <button

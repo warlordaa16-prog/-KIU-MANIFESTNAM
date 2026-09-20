@@ -72,8 +72,12 @@ interface FellowshipContextType {
   
   addHome: (homeData: Omit<HomeGroup, 'id'>) => HomeGroup;
   updateHome: (id: string, updates: Partial<HomeGroup>) => void;
+  deleteHome: (id: string) => void;
   
+  addDepartment: (deptData: Omit<Department, 'id'>) => Department;
   updateDepartment: (id: string, updates: Partial<Department>) => void;
+  deleteDepartment: (id: string) => void;
+  clearAllGroups: () => void;
   
   addEvent: (eventData: Omit<FellowshipEvent, 'id'>) => FellowshipEvent;
   updateEvent: (id: string, updates: Partial<FellowshipEvent>) => void;
@@ -205,7 +209,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // State collections initialized from localStorage or mockData
   const [members, setMembers] = useState<Member[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}members`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}members_v2`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Member[];
@@ -215,35 +219,35 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           departmentIds: m.departmentIds?.filter((d) => d !== 'dept-admin'),
         }));
       } catch {
-        return INITIAL_MEMBERS;
+        return [];
       }
     }
-    return INITIAL_MEMBERS;
+    return [];
   });
 
   const [homes, setHomes] = useState<HomeGroup[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}homes`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}homes_v2`);
     if (saved) {
       try {
         return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'home');
       } catch {
-        return INITIAL_HOMES;
+        return [];
       }
     }
-    return INITIAL_HOMES;
+    return [];
   });
 
   const [departments, setDepartments] = useState<Department[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}departments`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}departments_v2`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Department[];
         return parsed.filter((d) => d.id !== 'dept-admin' && !d.name.toLowerCase().includes('finance'));
       } catch {
-        return INITIAL_DEPARTMENTS;
+        return [];
       }
     }
-    return INITIAL_DEPARTMENTS;
+    return [];
   });
 
   const [events, setEvents] = useState<FellowshipEvent[]>(() => {
@@ -259,63 +263,63 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}attendance`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}attendance_v2`);
     if (saved) {
       try {
         return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'att');
       } catch {
-        return INITIAL_ATTENDANCE;
+        return [];
       }
     }
-    return INITIAL_ATTENDANCE;
+    return [];
   });
 
   const [income, setIncome] = useState<IncomeRecord[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}income`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}income_v2`);
     if (saved) {
       try {
         return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'inc');
       } catch {
-        return INITIAL_INCOME;
+        return [];
       }
     }
-    return INITIAL_INCOME;
+    return [];
   });
 
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}expenses`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}expenses_v2`);
     if (saved) {
       try {
         return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'exp');
       } catch {
-        return INITIAL_EXPENSES;
+        return [];
       }
     }
-    return INITIAL_EXPENSES;
+    return [];
   });
 
   const [budgets, setBudgets] = useState<Budget[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}budgets`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}budgets_v2`);
     if (saved) {
       try {
         return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'bdg');
       } catch {
-        return INITIAL_BUDGETS;
+        return [];
       }
     }
-    return INITIAL_BUDGETS;
+    return [];
   });
 
   const [projects, setProjects] = useState<FinancialProject[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}projects`);
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}projects_v2`);
     if (saved) {
       try {
-        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'proj');
+        return sanitizeItemsWithUniqueIds(JSON.parse(saved), 'prj');
       } catch {
-        return INITIAL_PROJECTS;
+        return [];
       }
     }
-    return INITIAL_PROJECTS;
+    return [];
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
@@ -344,15 +348,15 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Sync to local storage
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}members`, JSON.stringify(members));
+    localStorage.setItem(`${STORAGE_PREFIX}members_v2`, JSON.stringify(members));
   }, [members]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}homes`, JSON.stringify(homes));
+    localStorage.setItem(`${STORAGE_PREFIX}homes_v2`, JSON.stringify(homes));
   }, [homes]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}departments`, JSON.stringify(departments));
+    localStorage.setItem(`${STORAGE_PREFIX}departments_v2`, JSON.stringify(departments));
   }, [departments]);
 
   useEffect(() => {
@@ -360,23 +364,23 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [events]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
+    localStorage.setItem(`${STORAGE_PREFIX}attendance_v2`, JSON.stringify(attendance));
   }, [attendance]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}income`, JSON.stringify(income));
+    localStorage.setItem(`${STORAGE_PREFIX}income_v2`, JSON.stringify(income));
   }, [income]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}expenses`, JSON.stringify(expenses));
+    localStorage.setItem(`${STORAGE_PREFIX}expenses_v2`, JSON.stringify(expenses));
   }, [expenses]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}budgets`, JSON.stringify(budgets));
+    localStorage.setItem(`${STORAGE_PREFIX}budgets_v2`, JSON.stringify(budgets));
   }, [budgets]);
 
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}projects`, JSON.stringify(projects));
+    localStorage.setItem(`${STORAGE_PREFIX}projects_v2`, JSON.stringify(projects));
   }, [projects]);
 
   useEffect(() => {
@@ -532,9 +536,72 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     showToast(`Updated Home settings`, 'info');
   };
 
+  const deleteHome = (id: string) => {
+    const home = homes.find((h) => h.id === id);
+    setHomes((prev) => prev.filter((h) => h.id !== id));
+    addAuditLog({
+      module: 'Homes',
+      action: 'Home Group Deleted',
+      targetEntityId: id,
+      details: `Removed home fellowship: ${home?.name || id}`,
+      result: 'Warning',
+      userName: currentUserName,
+      userRole: currentUserRole,
+    });
+    showToast(`Home group ${home?.name || id} removed`, 'warning');
+  };
+
+  const addDepartment = (deptData: Omit<Department, 'id'>): Department => {
+    const slug = deptData.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+    const id = `dept-${slug}-${makeUniqueId('d')}`;
+    const newDept: Department = { ...deptData, id };
+    setDepartments((prev) => [...prev, newDept]);
+    addAuditLog({
+      module: 'Departments',
+      action: 'Department Created',
+      targetEntityId: id,
+      details: `Created new department: ${newDept.name} (${newDept.code})`,
+      result: 'Success',
+      userName: currentUserName,
+      userRole: currentUserRole,
+    });
+    showToast(`Created Department / Ministry: ${newDept.name}`, 'success');
+    return newDept;
+  };
+
   const updateDepartment = (id: string, updates: Partial<Department>) => {
     setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, ...updates } : d)));
     showToast(`Updated department settings`, 'info');
+  };
+
+  const deleteDepartment = (id: string) => {
+    const dept = departments.find((d) => d.id === id);
+    setDepartments((prev) => prev.filter((d) => d.id !== id));
+    addAuditLog({
+      module: 'Departments',
+      action: 'Department Deleted',
+      targetEntityId: id,
+      details: `Removed department: ${dept?.name || id}`,
+      result: 'Warning',
+      userName: currentUserName,
+      userRole: currentUserRole,
+    });
+    showToast(`Department ${dept?.name || id} removed`, 'warning');
+  };
+
+  const clearAllGroups = () => {
+    setHomes([]);
+    setDepartments([]);
+    addAuditLog({
+      module: 'Groups',
+      action: 'All Groups Cleared',
+      targetEntityId: 'all',
+      details: 'All home cells and departments cleared by user for fresh data entry',
+      result: 'Warning',
+      userName: currentUserName,
+      userRole: currentUserRole,
+    });
+    showToast('Fellowship groups emptied. Ready for custom entry.', 'info');
   };
 
   const addEvent = (eventData: Omit<FellowshipEvent, 'id'>): FellowshipEvent => {
@@ -1084,7 +1151,11 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         deleteMember,
         addHome,
         updateHome,
+        deleteHome,
+        addDepartment,
         updateDepartment,
+        deleteDepartment,
+        clearAllGroups,
         addEvent,
         updateEvent,
         recordAttendance,

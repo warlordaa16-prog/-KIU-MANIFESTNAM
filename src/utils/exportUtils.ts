@@ -686,3 +686,50 @@ export const printReportAsPdf = (config: PrintableReportConfig): void => {
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 };
+
+/**
+ * Export Fellowship Groups and Ministries Directory to CSV
+ */
+export const exportGroupsDirectoryToCsv = (
+  homes: HomeGroup[] = [],
+  departments: Department[] = [],
+  filename = `manifest_fellowship_groups_${new Date().toISOString().split('T')[0]}.csv`
+): void => {
+  const headers = [
+    'Category',
+    'ID',
+    'Group / Ministry Name',
+    'Zone / Area',
+    'Leader / Shepherd',
+    'Leader Contact',
+    'Meeting Schedule',
+    'Location / Venue',
+    'Description',
+  ];
+
+  const homeRows = homes.map((h) => [
+    'Home Cell',
+    h.id,
+    h.name,
+    h.zone || '',
+    h.leaderName,
+    h.leaderPhone,
+    `${h.meetingDay || ''} ${h.meetingTime || ''}`.trim(),
+    h.addressOrHostel || '',
+    h.description || '',
+  ]);
+
+  const deptRows = departments.map((d) => [
+    'Ministry / Department',
+    d.id,
+    d.name,
+    'Central Campus',
+    d.leaderName,
+    d.leaderPhone,
+    d.meetingSchedule || '',
+    'Campus Auditorium',
+    d.description || '',
+  ]);
+
+  downloadCsv(filename, headers, [...homeRows, ...deptRows]);
+};

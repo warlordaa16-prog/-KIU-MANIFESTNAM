@@ -4,37 +4,37 @@ import { HomeGroup, Department } from '../../types';
 import {
   Layers,
   Home,
-  Users,
   MapPin,
   Calendar,
   Phone,
   Search,
   Plus,
   Edit2,
-  CheckCircle2,
-  ChevronRight,
-  UserCheck,
-  ShieldCheck,
+  Trash2,
   Building,
+  UserCheck,
+  Check,
+  X,
+  RotateCcw,
 } from 'lucide-react';
 
 export const FellowshipGroupsManager: React.FC = () => {
   const {
-    homes,
-    departments,
-    members,
+    homes = [],
+    departments = [],
     addHome,
     updateHome,
+    deleteHome,
+    addDepartment,
     updateDepartment,
-    currentUserRole,
+    deleteDepartment,
+    clearAllGroups,
   } = useFellowship();
 
   const [activeTab, setActiveTab] = useState<'homes' | 'departments'>('homes');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
-  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
 
-  // New Home Modal
+  // Add Home Modal State
   const [isAddHomeOpen, setIsAddHomeOpen] = useState(false);
   const [newHomeName, setNewHomeName] = useState('');
   const [newHomeZone, setNewHomeZone] = useState('Kansanga - KIU Campus');
@@ -42,8 +42,29 @@ export const FellowshipGroupsManager: React.FC = () => {
   const [newHomeLeaderPhone, setNewHomeLeaderPhone] = useState('');
   const [newHomeMeetingDay, setNewHomeMeetingDay] = useState('Every Wednesday 6:00 PM');
   const [newHomeLocation, setNewHomeLocation] = useState('');
+  const [newHomeDescription, setNewHomeDescription] = useState('');
   const [newHomeTargetCount, setNewHomeTargetCount] = useState(25);
 
+  // Edit Home Modal State
+  const [editingHome, setEditingHome] = useState<HomeGroup | null>(null);
+
+  // Add Department Modal State
+  const [isAddDeptOpen, setIsAddDeptOpen] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptCode, setNewDeptCode] = useState('');
+  const [newDeptLeaderName, setNewDeptLeaderName] = useState('');
+  const [newDeptLeaderPhone, setNewDeptLeaderPhone] = useState('');
+  const [newDeptMeetingSchedule, setNewDeptMeetingSchedule] = useState('Fridays 5:00 PM');
+  const [newDeptDescription, setNewDeptDescription] = useState('');
+
+  // Edit Department Modal State
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+
+  // Confirm delete modal
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'home' | 'department'; id: string; name: string } | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Create Home Handler
   const handleCreateHome = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHomeName.trim() || !newHomeLeaderName.trim()) return;
@@ -54,8 +75,9 @@ export const FellowshipGroupsManager: React.FC = () => {
       leaderId: 'MAN-LEADER-' + Date.now(),
       leaderName: newHomeLeaderName.trim(),
       leaderPhone: newHomeLeaderPhone.trim() || '+256 700 000000',
-      meetingDay: newHomeMeetingDay,
+      meetingDay: newHomeMeetingDay.trim(),
       location: newHomeLocation.trim() || 'KIU Campus Zone',
+      description: newHomeDescription.trim() || undefined,
       targetCount: Number(newHomeTargetCount) || 20,
     });
 
@@ -64,13 +86,89 @@ export const FellowshipGroupsManager: React.FC = () => {
     setNewHomeLeaderName('');
     setNewHomeLeaderPhone('');
     setNewHomeLocation('');
+    setNewHomeDescription('');
+  };
+
+  // Update Home Handler
+  const handleUpdateHome = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingHome || !editingHome.name.trim() || !editingHome.leaderName.trim()) return;
+
+    updateHome(editingHome.id, {
+      name: editingHome.name.trim(),
+      zone: editingHome.zone.trim(),
+      leaderName: editingHome.leaderName.trim(),
+      leaderPhone: editingHome.leaderPhone.trim(),
+      meetingDay: editingHome.meetingDay.trim(),
+      location: editingHome.location.trim(),
+      description: editingHome.description?.trim(),
+      targetCount: Number(editingHome.targetCount) || 20,
+    });
+
+    setEditingHome(null);
+  };
+
+  // Create Department Handler
+  const handleCreateDept = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeptName.trim() || !newDeptLeaderName.trim()) return;
+
+    const generatedCode = newDeptCode.trim()
+      ? newDeptCode.trim().toUpperCase()
+      : newDeptName.trim().slice(0, 4).toUpperCase();
+
+    addDepartment({
+      name: newDeptName.trim(),
+      code: generatedCode,
+      leaderId: 'MAN-LEADER-' + Date.now(),
+      leaderName: newDeptLeaderName.trim(),
+      leaderPhone: newDeptLeaderPhone.trim() || '+256 700 000000',
+      meetingSchedule: newDeptMeetingSchedule.trim() || 'Weekly Meeting',
+      description: newDeptDescription.trim() || 'Fellowship ministry department.',
+    });
+
+    setIsAddDeptOpen(false);
+    setNewDeptName('');
+    setNewDeptCode('');
+    setNewDeptLeaderName('');
+    setNewDeptLeaderPhone('');
+    setNewDeptDescription('');
+  };
+
+  // Update Department Handler
+  const handleUpdateDept = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDept || !editingDept.name.trim() || !editingDept.leaderName.trim()) return;
+
+    updateDepartment(editingDept.id, {
+      name: editingDept.name.trim(),
+      code: editingDept.code.trim().toUpperCase(),
+      leaderName: editingDept.leaderName.trim(),
+      leaderPhone: editingDept.leaderPhone.trim(),
+      meetingSchedule: editingDept.meetingSchedule.trim(),
+      description: editingDept.description.trim(),
+    });
+
+    setEditingDept(null);
+  };
+
+  // Confirm delete action
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
+    if (itemToDelete.type === 'home') {
+      deleteHome(itemToDelete.id);
+    } else {
+      deleteDepartment(itemToDelete.id);
+    }
+    setItemToDelete(null);
   };
 
   const filteredHomes = homes.filter(
     (h) =>
       h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       h.zone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      h.leaderName.toLowerCase().includes(searchQuery.toLowerCase())
+      h.leaderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (h.location && h.location.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredDepts = departments.filter(
@@ -80,406 +178,827 @@ export const FellowshipGroupsManager: React.FC = () => {
       d.leaderName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedHome = homes.find((h) => h.id === selectedHomeId);
-  const selectedDept = departments.find((d) => d.id === selectedDeptId);
-
-  const homeMembers = selectedHome
-    ? members.filter((m) => m.homeId === selectedHome.id)
-    : [];
-
-  const deptMembers = selectedDept
-    ? members.filter((m) => m.departmentIds?.includes(selectedDept.id))
-    : [];
-
   return (
     <div className="space-y-6" id="fellowship-groups-manager">
-      {/* Top Header Card */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
+      
+      {/* Top Header Bar */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-orange-400 font-semibold text-xs uppercase tracking-wider mb-1">
               <Layers className="w-4 h-4" />
-              Community & Governance Structures
+              Fellowship Structure & Groups
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Fellowship Groups & Ministries
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              Manage Home Fellowship Cell units across Makindye/Kansanga and specialized service ministries.
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              Create and manage your own custom Home Cell groups and Service Ministry departments.
             </p>
           </div>
 
-          {activeTab === 'homes' && (
-            <button
-              onClick={() => setIsAddHomeOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all cursor-pointer self-start md:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              Create Home Cell
-            </button>
-          )}
+          {/* Top Quick Actions */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {homes.length > 0 || departments.length > 0 ? (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/60 border border-slate-700/80 text-slate-300 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                title="Clear all existing groups to start empty"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Empty All Groups</span>
+              </button>
+            ) : null}
+
+            {activeTab === 'homes' ? (
+              <button
+                onClick={() => setIsAddHomeOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Add Home Cell</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAddDeptOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Add Department</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab Selection & Search */}
-        <div className="mt-6 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 w-full sm:w-auto">
+        <div className="mt-6 pt-6 border-t border-slate-800/90 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center p-1 bg-slate-950/90 rounded-xl border border-slate-800 w-full sm:w-auto">
             <button
-              onClick={() => {
-                setActiveTab('homes');
-                setSelectedDeptId(null);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              onClick={() => setActiveTab('homes')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'homes'
-                  ? 'bg-orange-500 text-white shadow-sm'
+                  ? 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
               <Home className="w-4 h-4" />
-              Home Cell Groups ({homes.length})
+              <span>Home Cells ({homes.length})</span>
             </button>
             <button
-              onClick={() => {
-                setActiveTab('departments');
-                setSelectedHomeId(null);
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              onClick={() => setActiveTab('departments')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'departments'
-                  ? 'bg-orange-500 text-white shadow-sm'
+                  ? 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
               <Building className="w-4 h-4" />
-              Service Ministries ({departments.length})
+              <span>Ministries & Depts ({departments.length})</span>
             </button>
           </div>
 
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search ${activeTab === 'homes' ? 'cells or zones' : 'ministries'}...`}
-              className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500"
+              placeholder={`Search ${activeTab === 'homes' ? 'cells, zones, or leaders' : 'departments or codes'}...`}
+              className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500"
             />
           </div>
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Main Content Area */}
       {activeTab === 'homes' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Home Groups Grid */}
-          <div className={`${selectedHome ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
-            {filteredHomes.map((home) => {
-              const assignedMembersCount = members.filter((m) => m.homeId === home.id).length;
-              const isSelected = selectedHomeId === home.id;
-
-              return (
+        <div>
+          {homes.length === 0 ? (
+            /* Empty State for Home Cells */
+            <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800/80 max-w-xl mx-auto space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mx-auto">
+                <Home className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-white">No Home Cells Created Yet</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  The home cell directory is currently empty. You can now define your own custom cells with designated zones, leaders, and meeting schedules.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsAddHomeOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-orange-500/25 transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Add Your First Home Cell</span>
+              </button>
+            </div>
+          ) : filteredHomes.length === 0 ? (
+            <div className="p-8 text-center rounded-xl bg-slate-900/40 border border-slate-800 text-slate-400 text-xs">
+              No home cells match &quot;{searchQuery}&quot;. Try a different search.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredHomes.map((home) => (
                 <div
                   key={home.id}
-                  onClick={() => setSelectedHomeId(isSelected ? null : home.id)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer text-left relative overflow-hidden ${
-                    isSelected
-                      ? 'bg-orange-950/20 border-orange-500/80 shadow-lg shadow-orange-500/10'
-                      : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
-                  }`}
+                  className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all text-left relative flex flex-col justify-between shadow-md"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold">
-                        <Home className="w-5 h-5" />
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold shrink-0">
+                          <Home className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white text-base leading-snug">{home.name}</h3>
+                          <span className="text-xs text-orange-400 font-medium">{home.zone}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-white text-base leading-snug">{home.name}</h3>
-                        <span className="text-xs text-orange-400/90 font-medium">{home.zone}</span>
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                      {assignedMembersCount} / {home.targetCount} members
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-2 text-xs text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span className="truncate">{home.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>{home.meetingDay}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Leader: <strong className="text-slate-200">{home.leaderName}</strong> ({home.leaderPhone})</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-orange-400">
-                    <span>{isSelected ? 'Viewing roster' : 'Click to view member roster'}</span>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Member Roster for Selected Home */}
-          {selectedHome && (
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 h-fit space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h4 className="font-bold text-white text-base">{selectedHome.name} Roster</h4>
-                  <p className="text-xs text-slate-400">{homeMembers.length} active registered members</p>
-                </div>
-                <button
-                  onClick={() => setSelectedHomeId(null)}
-                  className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-
-              {homeMembers.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-6 text-center">
-                  No members assigned to this cell group yet.
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                  {homeMembers.map((m) => (
-                    <div
-                      key={m.id}
-                      className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-semibold text-white text-xs truncate">{m.fullName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{m.id} • {m.phone}</div>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
-                        {m.academicYear || m.status}
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                        Cap: {home.targetCount || 20}
                       </span>
                     </div>
-                  ))}
+
+                    {/* Details */}
+                    <div className="mt-4 space-y-2 text-xs text-slate-400">
+                      {home.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="truncate">{home.location}</span>
+                        </div>
+                      )}
+                      {home.meetingDay && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>{home.meetingDay}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>Leader: <strong className="text-slate-200">{home.leaderName}</strong></span>
+                      </div>
+                      {home.leaderPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="font-mono">{home.leaderPhone}</span>
+                        </div>
+                      )}
+                      {home.description && (
+                        <p className="text-[11px] text-slate-500 line-clamp-2 pt-1 border-t border-slate-800/60 mt-2">
+                          {home.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setEditingHome(home)}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => setItemToDelete({ type: 'home', id: home.id, name: home.name })}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
       ) : (
-        /* Ministries / Departments Tab */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`${selectedDept ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
-            {filteredDepts.map((dept) => {
-              const assignedMembersCount = members.filter((m) => m.departmentIds?.includes(dept.id)).length;
-              const isSelected = selectedDeptId === dept.id;
-
-              return (
+        /* Service Ministries Tab */
+        <div>
+          {departments.length === 0 ? (
+            /* Empty State for Departments */
+            <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800/80 max-w-xl mx-auto space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto">
+                <Building className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-white">No Ministries or Departments Yet</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  The departments list is empty. Add your fellowship&apos;s ministries (e.g. Media, Choir, Protocol, Intercession) to organize teams and coordinators.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsAddDeptOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Add Your First Department</span>
+              </button>
+            </div>
+          ) : filteredDepts.length === 0 ? (
+            <div className="p-8 text-center rounded-xl bg-slate-900/40 border border-slate-800 text-slate-400 text-xs">
+              No departments match &quot;{searchQuery}&quot;.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredDepts.map((dept) => (
                 <div
                   key={dept.id}
-                  onClick={() => setSelectedDeptId(isSelected ? null : dept.id)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer text-left relative overflow-hidden ${
-                    isSelected
-                      ? 'bg-amber-950/20 border-amber-500/80 shadow-lg shadow-amber-500/10'
-                      : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
-                  }`}
+                  className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all text-left relative flex flex-col justify-between shadow-md"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold">
-                        <Building className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-white text-base leading-snug">{dept.name}</h3>
-                        <span className="text-xs text-amber-400/90 font-mono font-medium">{dept.code}</span>
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shrink-0">
+                          <Building className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white text-base leading-snug">{dept.name}</h3>
+                          <span className="text-xs text-amber-400 font-mono font-bold">{dept.code}</span>
+                        </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                      {assignedMembersCount} volunteers
-                    </span>
-                  </div>
 
-                  <p className="mt-3 text-xs text-slate-400 line-clamp-2">{dept.description}</p>
+                    {dept.description && (
+                      <p className="mt-3 text-xs text-slate-400 line-clamp-2">{dept.description}</p>
+                    )}
 
-                  <div className="mt-3 space-y-1.5 text-xs text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>{dept.meetingSchedule}</span>
+                    {/* Details */}
+                    <div className="mt-3 space-y-2 text-xs text-slate-400">
+                      {dept.meetingSchedule && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>{dept.meetingSchedule}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>Leader: <strong className="text-slate-200">{dept.leaderName}</strong></span>
+                      </div>
+                      {dept.leaderPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="font-mono">{dept.leaderPhone}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Leader: <strong className="text-slate-200">{dept.leaderName}</strong> ({dept.leaderPhone})</span>
-                    </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-400">
-                    <span>{isSelected ? 'Viewing roster' : 'Click to view volunteer roster'}</span>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Volunteer Roster for Selected Ministry */}
-          {selectedDept && (
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 h-fit space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h4 className="font-bold text-white text-base">{selectedDept.name} Roster</h4>
-                  <p className="text-xs text-slate-400">{deptMembers.length} active members</p>
-                </div>
-                <button
-                  onClick={() => setSelectedDeptId(null)}
-                  className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-
-              {deptMembers.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-6 text-center">
-                  No volunteers currently assigned to this department.
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                  {deptMembers.map((m) => (
-                    <div
-                      key={m.id}
-                      className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2"
+                  {/* Actions Bar */}
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setEditingDept(dept)}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <div className="min-w-0">
-                        <div className="font-semibold text-white text-xs truncate">{m.fullName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{m.id} • {m.phone}</div>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
-                        {m.status}
-                      </span>
-                    </div>
-                  ))}
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => setItemToDelete({ type: 'department', id: dept.id, name: dept.name })}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Create Home Modal */}
+      {/* CREATE HOME CELL MODAL */}
       {isAddHomeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white text-lg flex items-center gap-2">
                 <Home className="w-5 h-5 text-orange-400" />
-                Add New Home Cell Group
+                Create New Home Cell
               </h3>
               <button
                 onClick={() => setIsAddHomeOpen(false)}
-                className="text-slate-400 hover:text-white text-sm cursor-pointer"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateHome} className="space-y-3">
+            <form onSubmit={handleCreateHome} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Cell Group Name *</label>
+                <label className="block font-semibold text-slate-300 mb-1">Cell Group Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Home Bethel, Home Carmel"
+                  placeholder="e.g. Home Bethel, Kansanga Alpha Cell"
                   value={newHomeName}
                   onChange={(e) => setNewHomeName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Zone / Territory *</label>
+                <label className="block font-semibold text-slate-300 mb-1">Zone / Area *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kansanga - Kalungi / KIU Hostels"
+                  placeholder="e.g. Kansanga - Kalungi / Heritage Park"
                   value={newHomeZone}
                   onChange={(e) => setNewHomeZone(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Leader Name *</label>
+                  <label className="block font-semibold text-slate-300 mb-1">Cell Leader Name *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Brian Ochieng"
+                    placeholder="e.g. Emmanuel Kato"
                     value={newHomeLeaderName}
                     onChange={(e) => setNewHomeLeaderName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Leader Phone</label>
+                  <label className="block font-semibold text-slate-300 mb-1">Leader Phone</label>
                   <input
                     type="text"
                     placeholder="+256 700 000000"
                     value={newHomeLeaderPhone}
                     onChange={(e) => setNewHomeLeaderPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Meeting Location</label>
+                <label className="block font-semibold text-slate-300 mb-1">Meeting Location</label>
                 <input
                   type="text"
-                  placeholder="e.g. Dream World Hostel Lawn, Kansanga"
+                  placeholder="e.g. Prestige Hostel Common Room, Kansanga"
                   value={newHomeLocation}
                   onChange={(e) => setNewHomeLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Meeting Schedule</label>
+                  <label className="block font-semibold text-slate-300 mb-1">Meeting Schedule</label>
                   <input
                     type="text"
                     value={newHomeMeetingDay}
                     onChange={(e) => setNewHomeMeetingDay(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Target Members</label>
+                  <label className="block font-semibold text-slate-300 mb-1">Target Capacity</label>
                   <input
                     type="number"
                     value={newHomeTargetCount}
                     onChange={(e) => setNewHomeTargetCount(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Description / Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Brief description of the cell's target focus or area..."
+                  value={newHomeDescription}
+                  onChange={(e) => setNewHomeDescription(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                />
               </div>
 
               <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsAddHomeOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 text-sm hover:bg-slate-800 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm cursor-pointer shadow-lg shadow-orange-500/20"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-bold shadow-md shadow-orange-500/20 cursor-pointer"
                 >
-                  Save Cell Group
+                  Save Home Cell
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* EDIT HOME CELL MODAL */}
+      {editingHome && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-orange-400" />
+                Edit Home Cell ({editingHome.name})
+              </h3>
+              <button
+                onClick={() => setEditingHome(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateHome} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Cell Group Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingHome.name}
+                  onChange={(e) => setEditingHome({ ...editingHome, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Zone / Area *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingHome.zone}
+                  onChange={(e) => setEditingHome({ ...editingHome, zone: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Cell Leader Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingHome.leaderName}
+                    onChange={(e) => setEditingHome({ ...editingHome, leaderName: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Leader Phone</label>
+                  <input
+                    type="text"
+                    value={editingHome.leaderPhone}
+                    onChange={(e) => setEditingHome({ ...editingHome, leaderPhone: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Meeting Location</label>
+                <input
+                  type="text"
+                  value={editingHome.location}
+                  onChange={(e) => setEditingHome({ ...editingHome, location: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Meeting Schedule</label>
+                  <input
+                    type="text"
+                    value={editingHome.meetingDay}
+                    onChange={(e) => setEditingHome({ ...editingHome, meetingDay: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Target Capacity</label>
+                  <input
+                    type="number"
+                    value={editingHome.targetCount || 20}
+                    onChange={(e) => setEditingHome({ ...editingHome, targetCount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={editingHome.description || ''}
+                  onChange={(e) => setEditingHome({ ...editingHome, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingHome(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-slate-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-slate-950 font-bold shadow-md shadow-orange-500/20 cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE DEPARTMENT MODAL */}
+      {isAddDeptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                <Building className="w-5 h-5 text-amber-400" />
+                Add Ministry / Department
+              </h3>
+              <button
+                onClick={() => setIsAddDeptOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDept} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block font-semibold text-slate-300 mb-1">Ministry Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Media, Choir & Worship, Protocol"
+                    value={newDeptName}
+                    onChange={(e) => setNewDeptName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Code</label>
+                  <input
+                    type="text"
+                    placeholder="MEDIA"
+                    value={newDeptCode}
+                    onChange={(e) => setNewDeptCode(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Head / Coordinator *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Joshua Kigozi"
+                    value={newDeptLeaderName}
+                    onChange={(e) => setNewDeptLeaderName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+256 700 000000"
+                    value={newDeptLeaderPhone}
+                    onChange={(e) => setNewDeptLeaderPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Meeting / Rehearsal Schedule</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fridays 5:00 PM & Sundays 8:00 AM"
+                  value={newDeptMeetingSchedule}
+                  onChange={(e) => setNewDeptMeetingSchedule(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Ministry Mandate / Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe this department's service scope and responsibilities..."
+                  value={newDeptDescription}
+                  onChange={(e) => setNewDeptDescription(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddDeptOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-slate-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold shadow-md shadow-amber-500/20 cursor-pointer"
+                >
+                  Save Department
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT DEPARTMENT MODAL */}
+      {editingDept && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-amber-400" />
+                Edit Department ({editingDept.name})
+              </h3>
+              <button
+                onClick={() => setEditingDept(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateDept} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block font-semibold text-slate-300 mb-1">Ministry Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingDept.name}
+                    onChange={(e) => setEditingDept({ ...editingDept, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Code</label>
+                  <input
+                    type="text"
+                    value={editingDept.code}
+                    onChange={(e) => setEditingDept({ ...editingDept, code: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Head / Coordinator *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingDept.leaderName}
+                    onChange={(e) => setEditingDept({ ...editingDept, leaderName: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={editingDept.leaderPhone}
+                    onChange={(e) => setEditingDept({ ...editingDept, leaderPhone: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Meeting Schedule</label>
+                <input
+                  type="text"
+                  value={editingDept.meetingSchedule}
+                  onChange={(e) => setEditingDept({ ...editingDept, meetingSchedule: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Mandate / Description</label>
+                <textarea
+                  rows={2}
+                  value={editingDept.description}
+                  onChange={(e) => setEditingDept({ ...editingDept, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingDept(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-slate-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/20 cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM DELETE DIALOG */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-base">Delete {itemToDelete.type === 'home' ? 'Home Cell' : 'Department'}?</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Are you sure you want to remove <strong className="text-white">&quot;{itemToDelete.name}&quot;</strong>? This action will remove it from the fellowship structure.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 pt-2">
+              <button
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/25 cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLEAR ALL GROUPS CONFIRMATION */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto">
+              <RotateCcw className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-base">Empty All Groups?</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                This will clear all current home cells and ministry departments, giving you a completely empty slate to enter your custom data.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 pt-2">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  clearAllGroups();
+                  setShowClearConfirm(false);
+                }}
+                className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-md shadow-amber-500/20 cursor-pointer"
+              >
+                Yes, Empty Groups
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -57,14 +57,6 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = ({ onOpenThemeDrawer 
       icon: BarChart3,
       badge: null,
     },
-    {
-      id: 'public',
-      label: 'Public Landing Page',
-      shortLabel: 'Public Portal',
-      icon: Globe,
-      badge: 'Public',
-      badgeColor: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
-    },
   ];
 
   return (

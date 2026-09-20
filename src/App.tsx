@@ -12,7 +12,6 @@ import { MemberProfileModal } from './components/members/MemberProfileModal';
 import { MemberIdCardModal } from './components/members/MemberIdCardModal';
 import { FellowshipGroupsManager } from './components/groups/FellowshipGroupsManager';
 import { ReportsManager } from './components/reports/ReportsManager';
-import { PublicLandingPage } from './components/public/PublicLandingPage';
 import { THEME_PRESETS } from './themeConstants';
 import { Member } from './types';
 
@@ -50,16 +49,6 @@ const MainAppContent: React.FC = () => {
       setIdCardMember(newM);
     }
   };
-
-  // If user navigated to Public Landing Page
-  if (activeTab === 'public') {
-    return (
-      <div className="min-h-screen bg-slate-950 font-sans">
-        <PublicLandingPage />
-        <ToastContainer />
-      </div>
-    );
-  }
 
   return (
     <div className={`min-h-screen ${themeConfig.bgClass} flex flex-col font-sans transition-colors duration-500 relative selection:bg-orange-500 selection:text-white`}>

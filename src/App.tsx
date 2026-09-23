@@ -3,7 +3,6 @@ import { FellowshipProvider, useFellowship } from './context/FellowshipContext';
 import { Header } from './components/common/Header';
 import { BottomTaskbar } from './components/common/BottomTaskbar';
 import { WatermarkBackground } from './components/common/WatermarkBackground';
-import { ThemeWatermarkDrawer } from './components/common/ThemeWatermarkDrawer';
 import { ToastContainer } from './components/common/ToastContainer';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { MemberDirectory } from './components/members/MemberDirectory';
@@ -30,7 +29,6 @@ const MainAppContent: React.FC = () => {
 
   // Modals state
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isThemeDrawerOpen, setIsThemeDrawerOpen] = useState(false);
   const [profileMember, setProfileMember] = useState<Member | null>(null);
   const [idCardMember, setIdCardMember] = useState<Member | null>(null);
 
@@ -63,7 +61,6 @@ const MainAppContent: React.FC = () => {
       {/* Top Header */}
       <Header
         onOpenRegister={() => setIsRegisterOpen(true)}
-        onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)}
       />
 
       {/* Main Dynamic View (Full width without side bar) */}
@@ -91,13 +88,7 @@ const MainAppContent: React.FC = () => {
       </main>
 
       {/* Bottom Taskbar Navigation */}
-      <BottomTaskbar onOpenThemeDrawer={() => setIsThemeDrawerOpen(true)} />
-
-      {/* Theme & Watermark Customization Drawer */}
-      <ThemeWatermarkDrawer
-        isOpen={isThemeDrawerOpen}
-        onClose={() => setIsThemeDrawerOpen(false)}
-      />
+      <BottomTaskbar />
 
       {/* Modals & Dialogs */}
       <MemberRegistrationModal

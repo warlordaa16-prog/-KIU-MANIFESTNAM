@@ -7,6 +7,7 @@ import {
   Printer,
   QrCode,
   Shield,
+  ShieldCheck,
   Copy,
   Check,
   MapPin,
@@ -53,7 +54,7 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
   };
 
   const { firstName, lastName } = getDerivedNames();
-  const hostelOrResidence = member?.hostelOrResidence || member?.residence || 'Kansanga / KIU Vicinity';
+  const hostelOrResidence = member?.hostelOrResidence || member?.residence || 'Not specified';
   const yearOfStudyDisplay = member?.studentInfo?.isStudent
     ? `Year ${member.studentInfo.yearOfStudy || 1}`
     : 'Scholar / Working';
@@ -233,7 +234,17 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                 </span>
               </div>
 
-              {/* Field 5: Phone Contact */}
+              {/* Field 5: Fellowship Status */}
+              <div className="flex items-start justify-between gap-2 border-b border-slate-850 pb-1.5">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1 shrink-0">
+                  <ShieldCheck className="w-3 h-3 text-amber-400" /> Fellowship Status:
+                </span>
+                <span className="font-bold text-amber-300 text-right">
+                  {member.status}
+                </span>
+              </div>
+
+              {/* Field 6: Phone Contact */}
               <div className="flex items-start justify-between gap-2">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1 shrink-0">
                   <Phone className="w-3 h-3 text-yellow-400" /> Phone Contact:

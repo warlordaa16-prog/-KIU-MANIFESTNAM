@@ -6,7 +6,6 @@ import {
   Layers,
   BarChart3,
   Globe,
-  Palette,
   Sparkles,
   Shield,
 } from 'lucide-react';
@@ -15,7 +14,7 @@ interface BottomTaskbarProps {
   onOpenThemeDrawer?: () => void;
 }
 
-export const BottomTaskbar: React.FC<BottomTaskbarProps> = ({ onOpenThemeDrawer }) => {
+export const BottomTaskbar: React.FC<BottomTaskbarProps> = () => {
   const {
     activeTab,
     setActiveTab,
@@ -23,7 +22,6 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = ({ onOpenThemeDrawer 
     departments = [],
     homes = [],
     currentUserRole,
-    watermarkOpacity,
   } = useFellowship();
 
   const navItems = [
@@ -121,24 +119,6 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = ({ onOpenThemeDrawer 
             );
           })}
         </div>
-
-        {/* Right: Theme & Watermark Quick Launcher */}
-        {onOpenThemeDrawer && (
-          <div className="shrink-0">
-            <button
-              id="bottom-taskbar-theme-btn"
-              onClick={onOpenThemeDrawer}
-              title={`Theme & Watermark (${Math.round(watermarkOpacity * 100)}%)`}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-orange-500/40 text-xs text-slate-300 hover:text-white transition-all cursor-pointer group"
-            >
-              <Palette className="w-4 h-4 text-orange-400 group-hover:rotate-12 transition-transform shrink-0" />
-              <span className="hidden sm:inline text-[11px] font-semibold">Theme</span>
-              <span className="text-[10px] font-mono text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
-                {Math.round(watermarkOpacity * 100)}%
-              </span>
-            </button>
-          </div>
-        )}
 
       </div>
     </nav>

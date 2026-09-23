@@ -714,8 +714,8 @@ export const exportGroupsDirectoryToCsv = (
     h.zone || '',
     h.leaderName,
     h.leaderPhone,
-    `${h.meetingDay || ''} ${h.meetingTime || ''}`.trim(),
-    h.addressOrHostel || '',
+    h.meetingDay || '',
+    h.location || '',
     h.description || '',
   ]);
 

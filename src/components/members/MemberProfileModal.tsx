@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member, MemberStatus } from '../../types';
+import { Member, MemberStatus, UGANDA_UNIVERSITIES } from '../../types';
 import { useFellowship } from '../../context/FellowshipContext';
 import {
   X,
@@ -51,7 +51,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
       const derivedLast = member.lastName || (member.fullName.split(' ').length > 1 ? member.fullName.split(' ')[0] : member.fullName);
       setFirstName(derivedFirst);
       setLastName(derivedLast);
-      setHostelOrResidence(member.hostelOrResidence || member.residence || 'Olympia Hostel, Kansanga');
+      setHostelOrResidence(member.hostelOrResidence || member.residence || '');
       setPreferredName(member.preferredName || '');
       setPhone(member.phone);
       setEmail(member.email);
@@ -227,6 +227,23 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                   </div>
 
                   <div>
+                    <span className="text-amber-200/70 block text-[10px] font-semibold">Fellowship Status</span>
+                    {!isEditing ? (
+                      <span className="font-bold text-amber-300 text-xs">{member.status}</span>
+                    ) : (
+                      <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value as MemberStatus)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white font-semibold text-amber-300"
+                      >
+                        {statusOptions.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
                     <span className="text-amber-200/70 block text-[10px] font-semibold">Year of Study</span>
                     {!isEditing ? (
                       <span className="font-bold text-cyan-300 text-xs">Year {member.studentInfo?.yearOfStudy || yearOfStudy || 1}</span>
@@ -248,19 +265,19 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                   <div>
                     <span className="text-amber-200/70 block text-[10px] font-semibold">Hostel or Residence</span>
                     {!isEditing ? (
-                      <span className="font-bold text-emerald-300 text-xs">{member.hostelOrResidence || member.residence || hostelOrResidence || 'Olympia Hostel, Kansanga'}</span>
+                      <span className="font-bold text-emerald-300 text-xs">{member.hostelOrResidence || member.residence || hostelOrResidence || 'Not specified'}</span>
                     ) : (
                       <input
                         type="text"
                         value={hostelOrResidence}
                         onChange={(e) => setHostelOrResidence(e.target.value)}
-                        placeholder="Hostel or Residence"
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                        placeholder="Type hostel or residence..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white placeholder-slate-500"
                       />
                     )}
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div>
                     <span className="text-amber-200/70 block text-[10px] font-semibold">Phone Contact (WhatsApp / Call)</span>
                     {!isEditing ? (
                       <span className="font-bold text-amber-300 text-xs">{member.phone}</span>
@@ -313,16 +330,25 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Campus</span>
+                    <span className="text-slate-400 block text-[10px]">University / Institution</span>
                     {!isEditing ? (
                       <span className="font-semibold text-slate-200">{member.studentInfo?.campus || 'N/A'}</span>
                     ) : (
-                      <input
-                        type="text"
-                        value={campus}
-                        onChange={(e) => setCampus(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
-                      />
+                      <>
+                        <input
+                          type="text"
+                          list="uganda-universities-list"
+                          value={campus}
+                          onChange={(e) => setCampus(e.target.value)}
+                          placeholder="Select or enter university..."
+                          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                        />
+                        <datalist id="uganda-universities-list">
+                          {UGANDA_UNIVERSITIES.map((u) => (
+                            <option key={u} value={u} />
+                          ))}
+                        </datalist>
+                      </>
                     )}
                   </div>
 
@@ -354,11 +380,6 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                         className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
                       />
                     )}
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Registration Number</span>
-                    <span className="font-semibold text-slate-200">{member.studentInfo?.registrationNumber || 'None'}</span>
                   </div>
                 </div>
               </div>

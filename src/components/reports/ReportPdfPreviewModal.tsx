@@ -67,6 +67,15 @@ export const ReportPdfPreviewModal: React.FC<ReportPdfPreviewModalProps> = ({
     return true;
   });
 
+  // Available campuses from members
+  const availableCampuses = Array.from(
+    new Set(
+      members
+        .map((m) => m.studentInfo?.campus)
+        .filter((c): c is string => Boolean(c))
+    )
+  );
+
   // Filtered financial data
   const filteredIncome = income.filter((i) => {
     if (financialCategoryFilter !== 'All' && i.category !== financialCategoryFilter) return false;
@@ -344,11 +353,14 @@ export const ReportPdfPreviewModal: React.FC<ReportPdfPreviewModalProps> = ({
               <select
                 value={memberCampusFilter}
                 onChange={(e) => setMemberCampusFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-orange-500 outline-none"
+                className="bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-orange-500 outline-none max-w-[200px]"
               >
-                <option value="All">All Campuses</option>
-                <option value="KIU Main Campus (Kansanga)">KIU Main Campus (Kansanga)</option>
-                <option value="KIU Western Campus (Ishaka)">KIU Western Campus (Ishaka)</option>
+                <option value="All">All Campuses / Universities</option>
+                {availableCampuses.map((camp) => (
+                  <option key={camp} value={camp}>
+                    {camp}
+                  </option>
+                ))}
                 <option value="Non-Student / Working">Non-Student / Working</option>
               </select>
             </div>

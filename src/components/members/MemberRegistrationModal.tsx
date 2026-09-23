@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
-import { Gender, MemberStatus } from '../../types';
+import { Gender, MemberStatus, UGANDA_UNIVERSITIES } from '../../types';
 import {
   X,
   Sparkles,
-  User,
   GraduationCap,
-  Heart,
   CheckCircle,
   ArrowRight,
   ArrowLeft,
   MapPin,
   Phone,
   KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -27,60 +26,48 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   onClose,
   onSuccess,
 }) => {
-  const { addMember, departments } = useFellowship();
+  const { addMember } = useFellowship();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
 
   // Core Required Registration PIN Fields
   const [lastName, setLastName] = useState(''); // Name (Surname)
   const [firstName, setFirstName] = useState(''); // First Name
+  const [status, setStatus] = useState<MemberStatus>('First Timer'); // Fellowship Status in PIN fields
   const [phone, setPhone] = useState('+256 '); // Phone Contact
   const [yearOfStudy, setYearOfStudy] = useState(1); // Year of Study
-  const [hostelOrResidence, setHostelOrResidence] = useState('Olympia Hostel, Kansanga'); // Hostel or Residence
-  const [customHostel, setCustomHostel] = useState('');
+  const [hostelOrResidence, setHostelOrResidence] = useState(''); // Direct Custom Hostel / Residence
 
-  // Additional Details
-  const [preferredName, setPreferredName] = useState('');
+  // Additional Details (Nickname removed)
   const [gender, setGender] = useState<Gender>('Male');
   const [altPhone, setAltPhone] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
-  // Student Info
+  // Academic Profile: Ugandan Universities (KIU, MAK, KYU, UCU, etc.)
   const [isStudent, setIsStudent] = useState(true);
-  const [campus, setCampus] = useState('KIU - Main Campus (Kansanga)');
-  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [campus, setCampus] = useState<string>('Kampala International University (KIU)');
+  const [customUniversity, setCustomUniversity] = useState('');
   const [course, setCourse] = useState('');
-  const [faculty, setFaculty] = useState('');
-  const [expectedGraduationYear, setExpectedGraduationYear] = useState(2028);
 
-  // Fellowship Info
-  const [status, setStatus] = useState<MemberStatus>('First Timer');
-  const [dateOfFirstAttendance, setDateOfFirstAttendance] = useState(
+  // First attendance date
+  const [dateOfFirstAttendance] = useState(
     new Date().toISOString().split('T')[0]
   );
-  const [howFoundManifest, setHowFoundManifest] = useState('Campus Outreach');
-  const [invitedBy, setInvitedBy] = useState('');
-  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;
 
-  const handleToggleDepartment = (deptId: string) => {
-    if (selectedDepartmentIds.includes(deptId)) {
-      setSelectedDepartmentIds(selectedDepartmentIds.filter((id) => id !== deptId));
-    } else {
-      setSelectedDepartmentIds([...selectedDepartmentIds, deptId]);
-    }
-  };
-
-  const effectiveHostel =
-    hostelOrResidence === 'Other' ? customHostel.trim() || 'Kansanga' : hostelOrResidence;
+  const effectiveHostel = hostelOrResidence.trim();
+  const effectiveCampus = isStudent
+    ? (campus === 'Other University / Higher Institution'
+        ? customUniversity.trim() || 'Other Higher Institution'
+        : campus)
+    : 'Non-Student / Working Professional';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
-      alert('Please fill in Name (Surname), First Name, and Phone Contact.');
+    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !effectiveHostel) {
+      alert('Please fill in Name (Surname), First Name, Phone Contact, and Hostel / Residence.');
       return;
     }
 
@@ -91,7 +78,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
       fullName,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      preferredName: preferredName.trim() || firstName.trim(),
+      preferredName: firstName.trim(),
       gender,
       phone: phone.trim(),
       altPhone: altPhone.trim() || undefined,
@@ -101,20 +88,13 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
       residence: effectiveHostel.split(',')[0],
       studentInfo: {
         isStudent,
-        campus: isStudent ? campus : 'Non-Student / Working Professional',
-        registrationNumber: isStudent ? registrationNumber.trim() : undefined,
+        campus: effectiveCampus,
         course: isStudent ? course.trim() : undefined,
-        faculty: isStudent ? faculty.trim() : undefined,
         yearOfStudy: isStudent ? Number(yearOfStudy) : undefined,
-        expectedGraduationYear: isStudent ? Number(expectedGraduationYear) : undefined,
       },
       status,
       isFirstTimer,
       dateOfFirstAttendance,
-      howFoundManifest,
-      invitedBy: invitedBy.trim() || undefined,
-      departmentIds: selectedDepartmentIds,
-      notes: notes.trim() || undefined,
     });
 
     // Trigger celebratory confetti
@@ -146,7 +126,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                 Manifest Member Fast Registration & PIN Issuer
               </h2>
               <p className="text-xs text-slate-400">
-                Issues unique Registration PIN with Name, First Name, Year of Study, Hostel/Residence & Phone
+                Issues unique Registration PIN with Name, First Name, Fellowship Status, Year of Study, Hostel & Phone
               </p>
             </div>
           </div>
@@ -159,7 +139,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
           </button>
         </div>
 
-        {/* Multi-step progress indicator */}
+        {/* Multi-step progress indicator (Step 1: PIN Fields, Step 2: Academic Profile) */}
         <div className="px-6 py-3 bg-slate-950/50 border-b border-slate-800/80 flex items-center justify-between text-xs">
           <button
             type="button"
@@ -169,9 +149,9 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">1</span>
-            <span>Registration PIN Fields</span>
+            <span>Registration PIN Fields & Status</span>
           </button>
-          <div className="w-8 h-0.5 bg-slate-800" />
+          <div className="w-12 h-0.5 bg-slate-800" />
           <button
             type="button"
             onClick={() => setStep(2)}
@@ -182,34 +162,23 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">2</span>
             <span>Academic Profile</span>
           </button>
-          <div className="w-8 h-0.5 bg-slate-800" />
-          <button
-            type="button"
-            onClick={() => setStep(3)}
-            className={`flex items-center gap-1.5 font-bold ${
-              step === 3 ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">3</span>
-            <span>Fellowship Placement</span>
-          </button>
         </div>
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
           
-          {/* STEP 1: REGISTRATION PIN CORE FIELDS */}
+          {/* STEP 1: REGISTRATION PIN CORE FIELDS & FELLOWSHIP STATUS */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <KeyRound className="w-4 h-4 text-amber-400" />
                   <span className="text-xs font-bold text-amber-300">
-                    Registration PIN Information
+                    Registration PIN Information & Fellowship Status
                   </span>
                 </div>
                 <span className="text-[10px] text-amber-400/80 font-mono">
-                  All 5 Core PIN Fields
+                  Core PIN Credentials
                 </span>
               </div>
 
@@ -244,8 +213,24 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                 </div>
               </div>
 
-              {/* Phone Contact & Year of Study */}
+              {/* Fellowship Status & Phone Contact */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" />
+                    Fellowship Status <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as MemberStatus)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-semibold text-amber-300 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="First Timer">🌟 First Timer</option>
+                    <option value="Returning Visitor">Returning Visitor</option>
+                    <option value="Active">Active Regular Member</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
                     <Phone className="w-3 h-3 text-yellow-400" />
@@ -260,7 +245,10 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                   />
                 </div>
+              </div>
 
+              {/* Year of Study & Hostel / Residence */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
                     <GraduationCap className="w-3 h-3 text-cyan-400" />
@@ -278,60 +266,25 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                     <option value={5}>Year 5 (Medicine / Engineering)</option>
                   </select>
                 </div>
-              </div>
 
-              {/* Hostel or Residence */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-emerald-400" />
-                  Hostel or Residence <span className="text-rose-400">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <select
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-emerald-400" />
+                    Hostel or Residence <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
                     value={hostelOrResidence}
                     onChange={(e) => setHostelOrResidence(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium text-emerald-300"
-                  >
-                    <optgroup label="KIU Kansanga Hostels">
-                      <option value="Olympia Hostel, Kansanga">Olympia Hostel, Kansanga</option>
-                      <option value="Nana Hostel, Kansanga">Nana Hostel, Kansanga</option>
-                      <option value="Akamwesi Hostel, Kansanga">Akamwesi Hostel, Kansanga</option>
-                      <option value="Prestige Hostel, Kansanga">Prestige Hostel, Kansanga</option>
-                      <option value="Ideal Hostel, Kansanga">Ideal Hostel, Kansanga</option>
-                      <option value="Douglas Villa Hostel, Kansanga">Douglas Villa Hostel, Kansanga</option>
-                      <option value="Valley Courts Hostel, Kansanga">Valley Courts Hostel, Kansanga</option>
-                      <option value="Dream World Hostels, Kansanga">Dream World Hostels, Kansanga</option>
-                      <option value="Kalungi Plaza Hostels, Kansanga">Kalungi Plaza Hostels, Kansanga</option>
-                      <option value="JJ Hostel, Kansanga">JJ Hostel, Kansanga</option>
-                    </optgroup>
-                    <optgroup label="Makindye & Kampala Residential">
-                      <option value="Kansanga Trading Center">Kansanga Trading Center</option>
-                      <option value="Kabalagala">Kabalagala</option>
-                      <option value="Ggaba Road / Ggaba">Ggaba Road / Ggaba</option>
-                      <option value="Bunga Hill">Bunga Hill</option>
-                      <option value="Nsambya">Nsambya</option>
-                      <option value="Makindye Hill / Kizungu">Makindye Hill / Kizungu</option>
-                      <option value="Lukuli Nanganda">Lukuli Nanganda</option>
-                      <option value="Munyonyo">Munyonyo</option>
-                    </optgroup>
-                    <option value="Other">Other / Enter Custom Hostel</option>
-                  </select>
-
-                  {hostelOrResidence === 'Other' && (
-                    <input
-                      type="text"
-                      required
-                      value={customHostel}
-                      onChange={(e) => setCustomHostel(e.target.value)}
-                      placeholder="Enter hostel name or area..."
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                    />
-                  )}
+                    placeholder="Enter hostel, hall, or residence area..."
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-medium text-emerald-300"
+                  />
                 </div>
               </div>
 
-              {/* Additional Personal Details */}
-              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {/* Additional Personal Details (Nickname removed) */}
+              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
                   <select
@@ -346,20 +299,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Preferred / Nickname
-                  </label>
-                  <input
-                    type="text"
-                    value={preferredName}
-                    onChange={(e) => setPreferredName(e.target.value)}
-                    placeholder="e.g. Brian"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Email Address
+                    Email Address (Optional)
                   </label>
                   <input
                     type="email"
@@ -370,6 +310,15 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                   />
                 </div>
               </div>
+
+              {status === 'First Timer' && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold">First-Timer Welcome Protocol:</span> A digital Registration PIN pass and membership profile will be generated instantly for immediate scanning and verification.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -379,7 +328,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
               <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5" />
-                  Step 2: Student & Academic Information
+                  Step 2: Academic Profile
                 </span>
 
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
@@ -394,96 +343,46 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
               </div>
 
               {isStudent ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Campus / Institution</label>
-                      <select
-                        value={campus}
-                        onChange={(e) => setCampus(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                      >
-                        <option value="KIU - Main Campus (Kansanga)">KIU - Main Campus (Kansanga, Ggaba Rd)</option>
-                        <option value="KIU - School of Law (Kansanga)">KIU - School of Law (Kansanga)</option>
-                        <option value="KIU - School of Pharmacy (Kansanga)">KIU - School of Pharmacy & Biomedical</option>
-                        <option value="KIU - School of Computing & IT">KIU - School of Computing & IT</option>
-                        <option value="KIU - School of Engineering & Applied Sciences">KIU - School of Engineering & Applied Sciences</option>
-                        <option value="KIU - School of Business & Management">KIU - School of Business & Management</option>
-                        <option value="KIU - School of Education & Humanities">KIU - School of Education & Humanities</option>
-                        <option value="KIU - Western Campus (Ishaka / Health Sciences)">KIU - Western Campus (Ishaka / Health Sciences)</option>
-                        <option value="Makindye Division Resident / Other Scholar">Makindye Division Resident / Other Scholar</option>
-                      </select>
-                    </div>
+                <div className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      University / Higher Institution <span className="text-rose-400">*</span>
+                    </label>
+                    <select
+                      value={campus}
+                      onChange={(e) => setCampus(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium text-amber-300"
+                    >
+                      {UGANDA_UNIVERSITIES.map((univ) => (
+                        <option key={univ} value={univ}>
+                          {univ}
+                        </option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Student Registration / ID Number
-                      </label>
+                    {campus === 'Other University / Higher Institution' && (
                       <input
                         type="text"
-                        value={registrationNumber}
-                        onChange={(e) => setRegistrationNumber(e.target.value)}
-                        placeholder="e.g. 2024-08-01209"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        required
+                        value={customUniversity}
+                        onChange={(e) => setCustomUniversity(e.target.value)}
+                        placeholder="Type specific university or college name..."
+                        className="mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                       />
-                    </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Course / Program</label>
-                      <input
-                        type="text"
-                        value={course}
-                        onChange={(e) => setCourse(e.target.value)}
-                        placeholder="e.g. Bachelor of Laws / BSc Software Engineering / BPharm"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Faculty / School</label>
-                      <input
-                        type="text"
-                        value={faculty}
-                        onChange={(e) => setFaculty(e.target.value)}
-                        placeholder="e.g. School of Law / Computing & IT / Pharmacy / Business"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Course / Program</label>
+                    <input
+                      type="text"
+                      value={course}
+                      onChange={(e) => setCourse(e.target.value)}
+                      placeholder="e.g. Bachelor of Laws / BSc Software Engineering / BPharm"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Year of Study</label>
-                      <select
-                        value={yearOfStudy}
-                        onChange={(e) => setYearOfStudy(Number(e.target.value))}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-semibold text-cyan-300"
-                      >
-                        <option value={1}>Year 1 (Fresher)</option>
-                        <option value={2}>Year 2</option>
-                        <option value={3}>Year 3</option>
-                        <option value={4}>Year 4</option>
-                        <option value={5}>Year 5 (Medicine / Architecture)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Expected Graduation Year
-                      </label>
-                      <input
-                        type="number"
-                        min="2025"
-                        max="2032"
-                        value={expectedGraduationYear}
-                        onChange={(e) => setExpectedGraduationYear(Number(e.target.value))}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
-                </>
+                </div>
               ) : (
                 <div className="p-4 rounded-xl bg-slate-850 border border-slate-800 text-xs text-slate-300">
                   <p className="font-semibold text-white">Non-Student Member / Working Professional</p>
@@ -495,145 +394,32 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             </div>
           )}
 
-          {/* STEP 3: FELLOWSHIP PLACEMENT & FIRST TIMER WORKFLOW */}
-          {step === 3 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5" />
-                Step 3: Fellowship Integration & Placement
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Fellowship Status <span className="text-rose-400">*</span>
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as MemberStatus)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-semibold text-amber-300 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="First Timer">🌟 First Timer</option>
-                    <option value="Returning Visitor">Returning Visitor</option>
-                    <option value="Active">Active Regular Member</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    First Attendance Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateOfFirstAttendance}
-                    onChange={(e) => setDateOfFirstAttendance(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    How They Found Manifest
-                  </label>
-                  <select
-                    value={howFoundManifest}
-                    onChange={(e) => setHowFoundManifest(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="Campus Outreach">Campus Outreach / Evangelism</option>
-                    <option value="Friend/Member">Friend / Member Invitation</option>
-                    <option value="Social Media">Social Media (Instagram/TikTok)</option>
-                    <option value="Flyer/Poster">Poster / Banner on Campus</option>
-                    <option value="Conference">Special Event / Conference</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Invited By (Name / Contact)
-                </label>
-                <input
-                  type="text"
-                  value={invitedBy}
-                  onChange={(e) => setInvitedBy(e.target.value)}
-                  placeholder="e.g. Paul Okello / Self-attended"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              {/* Department Interests */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Ministry & Service Interests
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {departments.map((dept) => {
-                    const isSelected = selectedDepartmentIds.includes(dept.id);
-                    return (
-                      <button
-                        type="button"
-                        key={dept.id}
-                        onClick={() => handleToggleDepartment(dept.id)}
-                        className={`p-2 rounded-lg border text-left text-[11px] font-medium transition-all ${
-                          isSelected
-                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                            : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:bg-slate-800'
-                        }`}
-                      >
-                        {dept.name?.split('&')?.[0] || dept.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  General / Pastoral Notes
-                </label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Special interests, prayer requests, accommodation notes..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              {status === 'First Timer' && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-bold">First-Timer Welcome Protocol:</span> A digital Registration PIN pass and membership profile will be generated instantly for immediate scanning and verification.
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Navigation Controls */}
           <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-            {step > 1 ? (
+            {step === 2 ? (
               <button
                 type="button"
-                onClick={() => setStep((step - 1) as 1 | 2)}
+                onClick={() => setStep(1)}
                 className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-colors"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to PIN Fields
               </button>
             ) : (
-              <div />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+              >
+                <CheckCircle className="w-3.5 h-3.5" /> Fast Register
+              </button>
             )}
 
-            {step < 3 ? (
+            {step === 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((step + 1) as 2 | 3)}
+                onClick={() => setStep(2)}
                 className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors"
               >
-                Continue <ArrowRight className="w-3.5 h-3.5" />
+                Academic Profile <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
@@ -651,3 +437,4 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
     </div>
   );
 };
+

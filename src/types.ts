@@ -82,15 +82,17 @@ export interface AttendanceRecord {
 
 export interface HomeGroup {
   id: string;
-  name: string; // e.g. "Home Sinai", "Home Zion"
+  name: string; // e.g. "Olympia Fellowship Family", "Home Sinai"
   zone: string; // e.g. "Kansanga - KIU Main Campus Zone", "Kabalagala", "Nsambya", "Makindye"
   leaderId: string;
   leaderName: string;
   leaderPhone: string;
+  leaderEmail?: string;
   assistantLeaderId?: string;
   assistantLeaderName?: string;
   meetingDay: string; // e.g. "Every Wednesday 6:00 PM"
   location: string; // e.g. "KIU Main Gate Lounge", "Prestige Hostel Quad"
+  hostelOrResidence?: string; // Associated hostel or residence name for auto-grouping
   description?: string;
   targetCount: number;
 }
@@ -290,3 +292,32 @@ export interface ThemeConfig {
   previewBg: string;
   previewAccent: string;
 }
+
+export const UGANDA_UNIVERSITIES = [
+  'Kampala International University (KIU)',
+  'Makerere University (MAK)',
+  'Kyambogo University (KYU)',
+  'Uganda Christian University (UCU)',
+  'Cavendish University Uganda (CUU)',
+  'International University of East Africa (IUEA)',
+  'Victoria University (VU)',
+  'Kampala University (KU)',
+  'Ndejje University (NDU)',
+  'Uganda Martyrs University (UMU)',
+  'Mbarara University of Science & Technology (MUST)',
+  'Islamic University in Uganda (IUIU)',
+  'Gulu University',
+  'Clarke International University (CIU)',
+  'ISBAT University',
+  'Nkumba University',
+  'Team University',
+  'Bugema University',
+  'Busitema University',
+  'Muni University',
+  'Soroti University',
+  'Lira University',
+  'Bishop Stuart University (BSU)',
+  'Kabale University',
+  'Mountains of the Moon University (MMU)',
+  'Other University / Higher Institution',
+] as const;

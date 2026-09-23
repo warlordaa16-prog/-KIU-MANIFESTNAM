@@ -73,6 +73,15 @@ interface FellowshipContextType {
   addHome: (homeData: Omit<HomeGroup, 'id'>) => HomeGroup;
   updateHome: (id: string, updates: Partial<HomeGroup>) => void;
   deleteHome: (id: string) => void;
+  assignMemberToHome: (memberId: string, homeId: string | undefined) => void;
+  assignMembersToHome: (memberIds: string[], homeId: string) => void;
+  setHomeLeader: (
+    homeId: string,
+    leaderName: string,
+    leaderPhone: string,
+    leaderEmail?: string
+  ) => void;
+  autoGroupByHostel: () => { createdCount: number; assignedCount: number };
   
   addDepartment: (deptData: Omit<Department, 'id'>) => Department;
   updateDepartment: (id: string, updates: Partial<Department>) => void;
@@ -447,9 +456,53 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   ): Member => {
     const id = generateMemberId();
     const today = new Date().toISOString().split('T')[0];
+
+    // Automatic Hostel / Residence Family Group assignment
+    const enteredHostel = (memberData.hostelOrResidence || memberData.residence || '').trim();
+    let assignedHomeId = memberData.homeId;
+
+    if (!assignedHomeId && enteredHostel && enteredHostel.toLowerCase() !== 'not specified') {
+      const cleanHostelLower = enteredHostel.toLowerCase();
+      // Look for existing home group matching this hostel
+      const matchedHome = homes.find(
+        (h) =>
+          (h.hostelOrResidence && h.hostelOrResidence.toLowerCase() === cleanHostelLower) ||
+          h.name.toLowerCase() === `${cleanHostelLower} fellowship family` ||
+          h.name.toLowerCase() === cleanHostelLower ||
+          h.location.toLowerCase() === cleanHostelLower ||
+          h.name.toLowerCase().includes(cleanHostelLower) ||
+          cleanHostelLower.includes(h.name.toLowerCase())
+      );
+
+      if (matchedHome) {
+        assignedHomeId = matchedHome.id;
+      } else {
+        // Automatically create the fellowship family group for this hostel
+        const slug = cleanHostelLower.replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+        const autoHomeId = `home-${slug}-${makeUniqueId('h')}`;
+        const autoHome: HomeGroup = {
+          id: autoHomeId,
+          name: `${enteredHostel} Fellowship Family`,
+          zone: 'Hostel & Residence Network',
+          leaderId: 'PENDING',
+          leaderName: 'Leader Pending Assignment',
+          leaderPhone: '',
+          leaderEmail: '',
+          meetingDay: 'Weekly Fellowship Gathering',
+          location: enteredHostel,
+          hostelOrResidence: enteredHostel,
+          description: `Fellowship family group for members residing at ${enteredHostel}.`,
+          targetCount: 20,
+        };
+        setHomes((prev) => [...prev, autoHome]);
+        assignedHomeId = autoHomeId;
+      }
+    }
+
     const newMember: Member = {
       ...memberData,
       id,
+      homeId: assignedHomeId,
       registrationDate: today,
     };
 
@@ -459,14 +512,14 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       module: 'Members',
       action: 'Member Registered',
       targetEntityId: id,
-      details: `Registered ${newMember.fullName} (${id}) - Status: ${newMember.status}`,
+      details: `Registered ${newMember.fullName} (${id}) - Status: ${newMember.status}${assignedHomeId ? ' - Assigned to Hostel Family' : ''}`,
       result: 'Success',
       userName: currentUserName,
       userRole: currentUserRole,
     });
 
     if (newMember.isFirstTimer || newMember.status === 'First Timer') {
-      showToast(`✨ First-Timer welcomed! Unique ID: ${id}.`, 'success');
+      showToast(`✨ First-Timer welcomed! ID: ${id}. Assigned to ${enteredHostel || 'Fellowship'} Family.`, 'success');
     } else {
       showToast(`Member registered successfully! Assigned ID: ${id}`, 'success');
     }
@@ -479,6 +532,24 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       prev.map((m) => {
         if (m.id === id) {
           const updated = { ...m, ...updates };
+
+          // If hostel changed and homeId was not explicitly given, re-sync to matching home
+          if (updates.hostelOrResidence && updates.homeId === undefined) {
+            const cleanHostelLower = updates.hostelOrResidence.trim().toLowerCase();
+            if (cleanHostelLower && cleanHostelLower !== 'not specified') {
+              const matchedHome = homes.find(
+                (h) =>
+                  (h.hostelOrResidence && h.hostelOrResidence.toLowerCase() === cleanHostelLower) ||
+                  h.name.toLowerCase() === `${cleanHostelLower} fellowship family` ||
+                  h.location.toLowerCase() === cleanHostelLower ||
+                  h.name.toLowerCase().includes(cleanHostelLower)
+              );
+              if (matchedHome) {
+                updated.homeId = matchedHome.id;
+              }
+            }
+          }
+
           return updated;
         }
         return m;
@@ -539,6 +610,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const deleteHome = (id: string) => {
     const home = homes.find((h) => h.id === id);
     setHomes((prev) => prev.filter((h) => h.id !== id));
+    // Also unassign members from this home
+    setMembers((prev) => prev.map((m) => (m.homeId === id ? { ...m, homeId: undefined } : m)));
     addAuditLog({
       module: 'Homes',
       action: 'Home Group Deleted',
@@ -549,6 +622,131 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       userRole: currentUserRole,
     });
     showToast(`Home group ${home?.name || id} removed`, 'warning');
+  };
+
+  // Assign a specific member with their details to a group/family
+  const assignMemberToHome = (memberId: string, homeId: string | undefined) => {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, homeId } : m))
+    );
+    const targetHome = homeId ? homes.find((h) => h.id === homeId) : null;
+    showToast(
+      targetHome ? `Assigned to ${targetHome.name}` : `Removed from family group`,
+      'info'
+    );
+  };
+
+  // Batch assign multiple members with their details to a specific group/family
+  const assignMembersToHome = (memberIds: string[], homeId: string) => {
+    setMembers((prev) =>
+      prev.map((m) => (memberIds.includes(m.id) ? { ...m, homeId } : m))
+    );
+    const targetHome = homes.find((h) => h.id === homeId);
+    showToast(
+      `Assigned ${memberIds.length} members to ${targetHome?.name || 'group'}`,
+      'success'
+    );
+  };
+
+  // Enter / assign the person that is going to head a specific group (leader name, phone, email)
+  const setHomeLeader = (
+    homeId: string,
+    leaderName: string,
+    leaderPhone: string,
+    leaderEmail?: string
+  ) => {
+    setHomes((prev) =>
+      prev.map((h) =>
+        h.id === homeId
+          ? {
+              ...h,
+              leaderName: leaderName.trim(),
+              leaderPhone: leaderPhone.trim(),
+              leaderEmail: leaderEmail?.trim() || undefined,
+            }
+          : h
+      )
+    );
+    addAuditLog({
+      module: 'Homes',
+      action: 'Group Head Assigned',
+      targetEntityId: homeId,
+      details: `Designated ${leaderName} as Head of Group for ${homeId}`,
+      result: 'Success',
+      userName: currentUserName,
+      userRole: currentUserRole,
+    });
+    showToast(`Leader ${leaderName} designated as Head of Group!`, 'success');
+  };
+
+  // Automatic grouping: scans all registered members and groups everyone in the same hostel into their family group
+  const autoGroupByHostel = (): { createdCount: number; assignedCount: number } => {
+    let createdCount = 0;
+    let assignedCount = 0;
+    let currentHomes = [...homes];
+
+    const getNormalizedKey = (str: string) =>
+      str.toLowerCase().replace(/fellowship family|cell group|home|hostel/g, '').trim();
+
+    const memberUpdates: Record<string, string> = {};
+
+    members.forEach((m) => {
+      const hostel = (m.hostelOrResidence || m.residence || '').trim();
+      if (!hostel || hostel.toLowerCase() === 'not specified') return;
+
+      const normHostel = getNormalizedKey(hostel);
+      let matched = currentHomes.find(
+        (h) =>
+          (h.hostelOrResidence && getNormalizedKey(h.hostelOrResidence) === normHostel) ||
+          getNormalizedKey(h.name) === normHostel ||
+          getNormalizedKey(h.location) === normHostel ||
+          (normHostel.length > 3 && getNormalizedKey(h.name).includes(normHostel))
+      );
+
+      if (!matched) {
+        const slug = hostel.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+        const autoHomeId = `home-${slug}-${makeUniqueId('h')}`;
+        const autoHome: HomeGroup = {
+          id: autoHomeId,
+          name: `${hostel} Fellowship Family`,
+          zone: 'Hostel & Residence Network',
+          leaderId: 'PENDING',
+          leaderName: 'Leader Pending Assignment',
+          leaderPhone: '',
+          leaderEmail: '',
+          meetingDay: 'Weekly Cell Gathering',
+          location: hostel,
+          hostelOrResidence: hostel,
+          description: `Fellowship family group for members residing at ${hostel}.`,
+          targetCount: 20,
+        };
+        currentHomes.push(autoHome);
+        matched = autoHome;
+        createdCount++;
+      }
+
+      if (m.homeId !== matched.id) {
+        memberUpdates[m.id] = matched.id;
+        assignedCount++;
+      }
+    });
+
+    if (createdCount > 0) {
+      setHomes(currentHomes);
+    }
+
+    if (assignedCount > 0) {
+      setMembers((prev) =>
+        prev.map((m) => (memberUpdates[m.id] ? { ...m, homeId: memberUpdates[m.id] } : m))
+      );
+    }
+
+    showToast(
+      `Auto-grouped: ${assignedCount} members organized across ${currentHomes.length} hostel families.`,
+      'success'
+    );
+
+    return { createdCount, assignedCount };
   };
 
   const addDepartment = (deptData: Omit<Department, 'id'>): Department => {
@@ -593,7 +791,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setHomes([]);
     setDepartments([]);
     addAuditLog({
-      module: 'Groups',
+      module: 'Homes',
       action: 'All Groups Cleared',
       targetEntityId: 'all',
       details: 'All home cells and departments cleared by user for fresh data entry',
@@ -1152,6 +1350,10 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         addHome,
         updateHome,
         deleteHome,
+        assignMemberToHome,
+        assignMembersToHome,
+        setHomeLeader,
+        autoGroupByHostel,
         addDepartment,
         updateDepartment,
         deleteDepartment,

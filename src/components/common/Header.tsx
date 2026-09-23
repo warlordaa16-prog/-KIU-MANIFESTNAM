@@ -1,22 +1,11 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
-import { THEME_PRESETS } from '../../themeConstants';
 import { UserRole } from '../../types';
 import { ManifestLogo } from './ManifestLogo';
 import {
   Search,
-  Plus,
   Shield,
-  UserCheck,
-  Calendar,
-  Bell,
-  Sparkles,
-  RefreshCw,
   Download,
-  Users,
-  Layers,
-  Award,
-  Palette,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,34 +15,23 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenRegister,
-  onOpenThemeDrawer,
 }) => {
   const {
     currentUserRole,
     setCurrentUserRole,
-    currentUserName,
-    setCurrentUserName,
     searchQuery,
     setSearchQuery,
     setActiveTab,
     exportBackupJson,
-    currentTheme,
-    watermarkOpacity,
   } = useFellowship();
 
-  const themeConfig = THEME_PRESETS[currentTheme] || THEME_PRESETS['obsidian-kiu'];
-
   const [showRoleMenu, setShowRoleMenu] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const totalNotifications = 0;
 
   const roles: { role: UserRole; label: string; desc: string }[] = [
     { role: 'Super Admin', label: 'Super Admin', desc: 'Full unrestricted system access' },
     { role: 'Fellowship Admin', label: 'Fellowship Admin', desc: 'General fellowship operations & members' },
     { role: 'Coordinator', label: 'Fellowship Coordinator', desc: 'Fellowship activities & community coordination' },
-    { role: 'Auditor', label: 'Auditor', desc: 'Read-only operational audit logs' },
+    { role: 'Auditor', label: 'Auditor', desc: 'Read-only audit logs' },
     { role: 'Member', label: 'Fellowship Member', desc: 'Personal ID pass & fellowship activities' },
   ];
 
@@ -88,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search member, phone, MAN-ID, student reg #..."
+                placeholder="Search member, phone, MAN-ID..."
                 className="w-full bg-slate-900/90 hover:bg-slate-900 focus:bg-slate-900 text-sm text-slate-100 placeholder-slate-400 pl-9 pr-4 py-2 rounded-xl border border-slate-800 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all shadow-inner"
               />
               {searchQuery && (
@@ -104,124 +82,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Center & Role Switcher */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-
-            {/* Themes & Watermark Customization Button */}
-            {onOpenThemeDrawer && (
-              <button
-                id="header-btn-theme-watermark"
-                onClick={onOpenThemeDrawer}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-orange-500/40 text-xs font-semibold text-slate-200 transition-all active:scale-95 shadow-sm group"
-                title="Change Background Theme & Watermark"
-              >
-                <div className="relative flex items-center justify-center">
-                  <Palette className="w-4 h-4 text-orange-400 group-hover:rotate-12 transition-transform" />
-                  <span
-                    className="absolute -top-1 -right-1 w-2 h-2 rounded-full ring-1 ring-slate-900"
-                    style={{ backgroundColor: themeConfig.accentColor }}
-                  />
-                </div>
-                <span className="hidden sm:inline">Theme</span>
-              </button>
-            )}
-            
-            {/* Quick Actions Dropdown */}
-            <div className="relative">
-              <button
-                id="header-btn-quick-actions"
-                onClick={() => {
-                  setShowQuickActions(!showQuickActions);
-                  setShowRoleMenu(false);
-                  setShowNotifications(false);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-orange-500/20 transition-all active:scale-95 border border-orange-400/30"
-              >
-                <Plus className="w-4 h-4 stroke-[3]" />
-                <span className="hidden sm:inline">Quick Action</span>
-              </button>
-
-              {showQuickActions && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-900 rounded-xl shadow-2xl border border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                    Operational Actions
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      onOpenRegister();
-                    }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-orange-300 text-xs flex items-center gap-2.5 transition-colors"
-                  >
-                    <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400">
-                      <Users className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">Register Member</div>
-                      <div className="text-[10px] text-slate-400">&lt; 2 min fast-track enrollment</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowQuickActions(false);
-                      setActiveTab('groups');
-                    }}
-                    className="w-full text-left px-3.5 py-2 hover:bg-slate-800/80 text-slate-200 hover:text-orange-300 text-xs flex items-center gap-2.5 transition-colors"
-                  >
-                    <div className="p-1.5 rounded bg-orange-500/10 text-orange-400">
-                      <Layers className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">Fellowship Groups</div>
-                      <div className="text-[10px] text-slate-400">Departments & home fellowships</div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Notifications Bell */}
-            <div className="relative">
-              <button
-                id="header-btn-notifications"
-                onClick={() => {
-                  setShowNotifications(!showNotifications);
-                  setShowQuickActions(false);
-                  setShowRoleMenu(false);
-                }}
-                className="relative p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors"
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {totalNotifications > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
-                )}
-              </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-slate-900 rounded-xl shadow-2xl border border-slate-800 py-2 z-50">
-                  <div className="px-3 py-1.5 text-xs font-bold text-slate-300 border-b border-slate-800 flex items-center justify-between">
-                    <span>Operational Alerts</span>
-                    <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">
-                      0 pending
-                    </span>
-                  </div>
-
-                  <div className="p-4 text-center text-slate-500 text-xs">
-                    All workflows current! No pending bottlenecks.
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Role Switcher */}
             <div className="relative">
               <button
                 id="header-btn-role-switcher"
                 onClick={() => {
                   setShowRoleMenu(!showRoleMenu);
-                  setShowQuickActions(false);
-                  setShowNotifications(false);
                 }}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 transition-colors"
               >
@@ -235,9 +101,8 @@ export const Header: React.FC<HeaderProps> = ({
 
               {showRoleMenu && (
                 <div className="absolute right-0 mt-2 w-72 bg-slate-900 rounded-xl shadow-2xl border border-slate-800 py-2 z-50">
-                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex justify-between items-center">
+                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                     <span>Role-Based Access (RBAC)</span>
-                    <span className="text-[9px] text-indigo-400">Simulation</span>
                   </div>
 
                   <div className="max-h-80 overflow-y-auto py-1">

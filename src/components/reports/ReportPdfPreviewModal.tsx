@@ -191,7 +191,7 @@ export const ReportPdfPreviewModal: React.FC<ReportPdfPreviewModalProps> = ({
       metrics: [
         { label: 'Total Souls Registered', value: `${members.length}`, hint: 'Total database count' },
         { label: 'KIU Student Scholars', value: `${members.filter((m) => m.studentInfo?.isStudent).length}`, hint: `${Math.round((members.filter((m) => m.studentInfo?.isStudent).length / (members.length || 1)) * 100)}% of fellowship` },
-        { label: 'Fellowship Groups & Cells', value: `${departments.length + homes.length}`, hint: `${departments.length} depts • ${homes.length} cells` },
+        { label: 'Fellowship Families & Cells', value: `${departments.length + homes.length}`, hint: `${departments.length} depts • ${homes.length} families` },
         { label: 'Net Treasury Reserve', value: formatUGX(income.reduce((s, i) => s + i.amount, 0) - expenses.reduce((s, e) => s + e.amount, 0)), hint: 'Current liquid balance' },
       ],
       tables: [
@@ -522,7 +522,7 @@ export const ReportPdfPreviewModal: React.FC<ReportPdfPreviewModalProps> = ({
                     </div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <div className="text-[9px] font-bold text-emerald-700 uppercase">Fellowship Groups</div>
+                    <div className="text-[9px] font-bold text-emerald-700 uppercase">Fellowship Families</div>
                     <div className="text-base font-black text-emerald-800 mt-0.5">
                       {departments.length + homes.length}
                     </div>

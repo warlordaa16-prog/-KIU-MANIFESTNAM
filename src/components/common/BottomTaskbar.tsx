@@ -8,6 +8,7 @@ import {
   Globe,
   Sparkles,
   Shield,
+  HeartHandshake,
 } from 'lucide-react';
 
 interface BottomTaskbarProps {
@@ -42,9 +43,9 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = () => {
     },
     {
       id: 'groups',
-      label: 'Fellowship Groups',
-      shortLabel: 'Groups',
-      icon: Layers,
+      label: 'Fellowship Families',
+      shortLabel: 'Families',
+      icon: HeartHandshake,
       badge: departments.length + homes.length,
       badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
     },

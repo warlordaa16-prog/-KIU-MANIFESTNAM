@@ -178,25 +178,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Operational Sections: Fellowship Groups & Recent Enrollments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
-        {/* Fellowship Groups Overview */}
+        {/* Fellowship Families Overview */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between shadow-md">
           <div>
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-orange-400" />
-                <h3 className="font-bold text-sm text-slate-200">Fellowship Groups & Hostel Families</h3>
+                <h3 className="font-bold text-sm text-slate-200">Fellowship Families & Hostel Residences</h3>
               </div>
               <button
                 onClick={() => setActiveTab('groups')}
                 className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1 cursor-pointer"
               >
-                View Groups →
+                View Families →
               </button>
             </div>
 
             {homes.length === 0 && departments.length === 0 ? (
               <div className="py-8 text-center text-slate-500 text-xs">
-                No fellowship groups registered yet. Create hostel families or ministries in Fellowship Groups.
+                No fellowship families registered yet. Create hostel families or ministries in Fellowship Families.
               </div>
             ) : (
               <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
@@ -232,7 +232,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('groups')}
             className="w-full mt-4 py-2.5 text-center text-xs text-slate-400 hover:text-orange-300 font-semibold border-t border-slate-800 cursor-pointer"
           >
-            Manage Hostel Families & Fellowship Groups →
+            Manage Hostel Families & Ministries →
           </button>
         </div>
 

@@ -591,20 +591,20 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setHomes((prev) => [...prev, newHome]);
     addAuditLog({
       module: 'Homes',
-      action: 'Home Group Created',
+      action: 'Fellowship Family Created',
       targetEntityId: id,
-      details: `Created new home fellowship: ${newHome.name} in zone ${newHome.zone}`,
+      details: `Created new fellowship family: ${newHome.name} in zone ${newHome.zone}`,
       result: 'Success',
       userName: currentUserName,
       userRole: currentUserRole,
     });
-    showToast(`Created Home: ${newHome.name}`, 'success');
+    showToast(`Created Family: ${newHome.name}`, 'success');
     return newHome;
   };
 
   const updateHome = (id: string, updates: Partial<HomeGroup>) => {
     setHomes((prev) => prev.map((h) => (h.id === id ? { ...h, ...updates } : h)));
-    showToast(`Updated Home settings`, 'info');
+    showToast(`Updated Family settings`, 'info');
   };
 
   const deleteHome = (id: string) => {
@@ -614,41 +614,41 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setMembers((prev) => prev.map((m) => (m.homeId === id ? { ...m, homeId: undefined } : m)));
     addAuditLog({
       module: 'Homes',
-      action: 'Home Group Deleted',
+      action: 'Fellowship Family Deleted',
       targetEntityId: id,
-      details: `Removed home fellowship: ${home?.name || id}`,
+      details: `Removed fellowship family: ${home?.name || id}`,
       result: 'Warning',
       userName: currentUserName,
       userRole: currentUserRole,
     });
-    showToast(`Home group ${home?.name || id} removed`, 'warning');
+    showToast(`Fellowship family ${home?.name || id} removed`, 'warning');
   };
 
-  // Assign a specific member with their details to a group/family
+  // Assign a specific member with their details to a family
   const assignMemberToHome = (memberId: string, homeId: string | undefined) => {
     setMembers((prev) =>
       prev.map((m) => (m.id === memberId ? { ...m, homeId } : m))
     );
     const targetHome = homeId ? homes.find((h) => h.id === homeId) : null;
     showToast(
-      targetHome ? `Assigned to ${targetHome.name}` : `Removed from family group`,
+      targetHome ? `Assigned to ${targetHome.name}` : `Removed from fellowship family`,
       'info'
     );
   };
 
-  // Batch assign multiple members with their details to a specific group/family
+  // Batch assign multiple members with their details to a specific family
   const assignMembersToHome = (memberIds: string[], homeId: string) => {
     setMembers((prev) =>
       prev.map((m) => (memberIds.includes(m.id) ? { ...m, homeId } : m))
     );
     const targetHome = homes.find((h) => h.id === homeId);
     showToast(
-      `Assigned ${memberIds.length} members to ${targetHome?.name || 'group'}`,
+      `Assigned ${memberIds.length} members to ${targetHome?.name || 'family'}`,
       'success'
     );
   };
 
-  // Enter / assign the person that is going to head a specific group (leader name, phone, email)
+  // Enter / assign the person that is going to head a specific family (leader name, phone, email)
   const setHomeLeader = (
     homeId: string,
     leaderName: string,
@@ -669,14 +669,14 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
     addAuditLog({
       module: 'Homes',
-      action: 'Group Head Assigned',
+      action: 'Family Head Assigned',
       targetEntityId: homeId,
-      details: `Designated ${leaderName} as Head of Group for ${homeId}`,
+      details: `Designated ${leaderName} as Head of Family for ${homeId}`,
       result: 'Success',
       userName: currentUserName,
       userRole: currentUserRole,
     });
-    showToast(`Leader ${leaderName} designated as Head of Group!`, 'success');
+    showToast(`Leader ${leaderName} designated as Head of Family!`, 'success');
   };
 
   // Automatic grouping: scans all registered members and groups everyone in the same hostel into their family group
@@ -792,14 +792,14 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setDepartments([]);
     addAuditLog({
       module: 'Homes',
-      action: 'All Groups Cleared',
+      action: 'All Families Cleared',
       targetEntityId: 'all',
-      details: 'All home cells and departments cleared by user for fresh data entry',
+      details: 'All fellowship families and departments cleared by user for fresh data entry',
       result: 'Warning',
       userName: currentUserName,
       userRole: currentUserRole,
     });
-    showToast('Fellowship groups emptied. Ready for custom entry.', 'info');
+    showToast('Fellowship families emptied. Ready for custom entry.', 'info');
   };
 
   const addEvent = (eventData: Omit<FellowshipEvent, 'id'>): FellowshipEvent => {

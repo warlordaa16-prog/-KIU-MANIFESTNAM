@@ -65,7 +65,7 @@ export const exportMembersToCsv = (
     'Course / Program',
     'Faculty',
     'Year of Study',
-    'Home Cell / Group',
+    'Fellowship Family',
     'Ministry Departments',
     'How Found Manifest',
     'Invited By',
@@ -690,27 +690,27 @@ export const printReportAsPdf = (config: PrintableReportConfig): void => {
 };
 
 /**
- * Export Fellowship Groups and Ministries Directory to CSV
+ * Export Fellowship Families and Ministries Directory to CSV
  */
-export const exportGroupsDirectoryToCsv = (
+export const exportFamiliesDirectoryToCsv = (
   homes: HomeGroup[] = [],
   departments: Department[] = [],
-  filename = `manifest_fellowship_groups_${new Date().toISOString().split('T')[0]}.csv`
+  filename = `manifest_fellowship_families_${new Date().toISOString().split('T')[0]}.csv`
 ): void => {
   const headers = [
     'Category',
     'ID',
-    'Group / Ministry Name',
+    'Family / Ministry Name',
     'Zone / Area',
-    'Leader / Shepherd',
-    'Leader Contact',
+    'Head / Leader',
+    'Contact Phone',
     'Meeting Schedule',
     'Location / Venue',
     'Description',
   ];
 
   const homeRows = homes.map((h) => [
-    'Home Cell',
+    'Hostel / Cell Family',
     h.id,
     h.name,
     h.zone || '',
@@ -735,3 +735,5 @@ export const exportGroupsDirectoryToCsv = (
 
   downloadCsv(filename, headers, [...homeRows, ...deptRows]);
 };
+
+export const exportGroupsDirectoryToCsv = exportFamiliesDirectoryToCsv;

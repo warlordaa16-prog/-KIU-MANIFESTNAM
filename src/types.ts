@@ -90,6 +90,8 @@ export interface HomeGroup {
   targetCount: number;
 }
 
+export type FellowshipFamily = HomeGroup;
+
 export interface Department {
   id: string;
   name: string; // e.g. "Choir & Worship", "Media & Production", "Protocol & Ushers"

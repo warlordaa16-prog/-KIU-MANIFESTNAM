@@ -292,7 +292,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                   className="w-full bg-slate-900 border-2 border-slate-700 focus:border-amber-500 rounded-lg px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none font-medium transition-all"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Direct custom entry. Fellowship members in the same hostel or residence are automatically organized into fellowship family groups.
+                  Direct custom entry. Fellowship members in the same hostel or residence are automatically organized into fellowship families.
                 </p>
               </div>
             </div>

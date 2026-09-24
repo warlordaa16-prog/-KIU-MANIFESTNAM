@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
-import { UserRole } from '../../types';
 import { ManifestLogo } from './ManifestLogo';
+import { exportMembersToCsv } from '../../utils/exportUtils';
 import {
   Search,
   Shield,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -18,22 +19,18 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const {
     currentUserRole,
-    setCurrentUserRole,
     searchQuery,
     setSearchQuery,
     setActiveTab,
     exportBackupJson,
+    members = [],
+    homes = [],
+    departments = [],
   } = useFellowship();
 
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-
-  const roles: { role: UserRole; label: string; desc: string }[] = [
-    { role: 'Super Admin', label: 'Super Admin', desc: 'Full unrestricted system access' },
-    { role: 'Fellowship Admin', label: 'Fellowship Admin', desc: 'General fellowship operations & members' },
-    { role: 'Coordinator', label: 'Fellowship Coordinator', desc: 'Fellowship activities & community coordination' },
-    { role: 'Auditor', label: 'Auditor', desc: 'Read-only audit logs' },
-    { role: 'Member', label: 'Fellowship Member', desc: 'Personal ID pass & fellowship activities' },
-  ];
+  const handleDownloadCsv = () => {
+    exportMembersToCsv(members, homes, departments);
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-[#090b14]/90 backdrop-blur-xl border-b border-slate-800/80 text-white shadow-xl">
@@ -80,60 +77,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Action Center & Role Switcher */}
+          {/* Action Center: Model Admin & CSV Download */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Role Switcher */}
-            <div className="relative">
-              <button
-                id="header-btn-role-switcher"
-                onClick={() => {
-                  setShowRoleMenu(!showRoleMenu);
-                }}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                <div className="text-left hidden md:block">
-                  <div className="font-semibold leading-tight text-slate-100">{currentUserRole}</div>
-                  <div className="text-[10px] text-slate-400 leading-tight">Switch Role View</div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-emerald-400 ml-1" title="RBAC Active" />
-              </button>
-
-              {showRoleMenu && (
-                <div className="absolute right-0 mt-2 w-72 bg-slate-900 rounded-xl shadow-2xl border border-slate-800 py-2 z-50">
-                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                    <span>Role-Based Access (RBAC)</span>
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto py-1">
-                    {roles.map((r) => (
-                      <button
-                        key={r.role}
-                        onClick={() => {
-                          setCurrentUserRole(r.role);
-                          setShowRoleMenu(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-start gap-2 ${
-                          currentUserRole === r.role
-                            ? 'bg-indigo-500/15 text-indigo-300 font-semibold'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                        }`}
-                      >
-                        <Shield className={`w-3.5 h-3.5 mt-0.5 ${currentUserRole === r.role ? 'text-indigo-400' : 'text-slate-500'}`} />
-                        <div>
-                          <div>{r.label}</div>
-                          <div className="text-[10px] text-slate-400 font-normal">{r.desc}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-slate-800 px-3 pt-2 pb-1 text-[10px] text-slate-500">
-                    Switching roles adjusts permission guards and views across the system.
-                  </div>
-                </div>
-              )}
+            {/* Model Admin Single Role Indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-xs font-bold text-orange-300 shadow-sm">
+              <Shield className="w-3.5 h-3.5 text-orange-400" />
+              <span>{currentUserRole || 'Model Admin'}</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 ml-0.5" title="Model Admin Active" />
             </div>
+
+            {/* Model Admin Download CSV Button */}
+            <button
+              onClick={handleDownloadCsv}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Download Fellowship CSV Roster"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Download CSV</span>
+            </button>
 
             {/* Quick backup button */}
             <button
@@ -144,7 +105,16 @@ export const Header: React.FC<HeaderProps> = ({
               <Download className="w-4 h-4" />
             </button>
 
+            {/* Register Member CTA */}
+            <button
+              id="header-btn-register-member"
+              onClick={onOpenRegister}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
+            >
+              + Register
+            </button>
           </div>
+
         </div>
       </div>
     </header>

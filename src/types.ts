@@ -7,17 +7,9 @@ export type MemberStatus =
   | 'Graduated'
   | 'Archived';
 
-export type UserRole =
-  | 'Super Admin'
-  | 'Fellowship Admin'
-  | 'Finance Admin'
-  | 'Finance Officer'
-  | 'Coordinator'
-  | 'Homes Leader'
-  | 'Department Leader'
-  | 'Attendance Officer'
-  | 'Auditor'
-  | 'Member';
+export type UserRole = 'Model Admin';
+
+export type MemberPortfolio = 'Schools' | 'Alumni' | 'Community';
 
 export type Gender = 'Male' | 'Female';
 
@@ -45,6 +37,7 @@ export interface Member {
   profilePhoto?: string;
   residence?: string; // e.g. 'Kansanga', 'Kabalagala', 'Ggaba', 'Bunga'
   hostelOrResidence?: string; // e.g. 'Olympia Hostel', 'Nana Hostel', 'Akamwesi Hostel', 'Ideal Hostel', 'Douglas Villa', 'Kansanga'
+  portfolio?: MemberPortfolio; // 'Schools' | 'Alumni' | 'Community'
   
   // Student Profile
   studentInfo: StudentProfile;

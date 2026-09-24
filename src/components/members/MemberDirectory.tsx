@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
-import { Member, MemberStatus } from '../../types';
+import { Member, MemberPortfolio } from '../../types';
 import { exportMembersToCsv } from '../../utils/exportUtils';
 import {
   Users,
   Search,
   Plus,
+  Download,
   QrCode,
   Eye,
-  Phone,
-  Mail,
-  Download,
-  Sparkles,
   MapPin,
+  GraduationCap,
+  Building,
+  Briefcase,
 } from 'lucide-react';
 
 interface MemberDirectoryProps {
@@ -35,8 +35,21 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   } = useFellowship();
 
   const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [studentFilter, setStudentFilter] = useState<string>('All');
+  const [portfolioFilter, setPortfolioFilter] = useState<string>('All');
   const [residenceFilter, setResidenceFilter] = useState<string>('All');
+
+  const getMemberPortfolio = (member: Member): MemberPortfolio => {
+    if (member.portfolio) return member.portfolio;
+    if (member.status === 'Graduated') return 'Alumni';
+    if (member.studentInfo?.isStudent) return 'Schools';
+    return 'Community';
+  };
+
+  // Portfolio counts
+  const schoolsCount = members.filter((m) => getMemberPortfolio(m) === 'Schools').length;
+  const alumniCount = members.filter((m) => getMemberPortfolio(m) === 'Alumni').length;
+  const communityCount = members.filter((m) => getMemberPortfolio(m) === 'Community').length;
+  const firstTimersCount = members.filter((m) => m.status === 'First Timer' || m.isFirstTimer).length;
 
   // Filter logic
   const filteredMembers = members.filter((member) => {
@@ -49,23 +62,24 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
       member.phone.toLowerCase().includes(q) ||
       (member.email && member.email.toLowerCase().includes(q)) ||
       (member.residence && member.residence.toLowerCase().includes(q)) ||
-      (member.studentInfo?.registrationNumber &&
-        member.studentInfo.registrationNumber.toLowerCase().includes(q)) ||
+      (member.hostelOrResidence && member.hostelOrResidence.toLowerCase().includes(q)) ||
+      (member.studentInfo?.campus && member.studentInfo.campus.toLowerCase().includes(q)) ||
       (member.studentInfo?.course && member.studentInfo.course.toLowerCase().includes(q));
 
     // Status filter
     const matchesStatus = statusFilter === 'All' || member.status === statusFilter;
 
-    // Student filter
-    const matchesStudent =
-      studentFilter === 'All' ||
-      (studentFilter === 'Students' && member.studentInfo?.isStudent) ||
-      (studentFilter === 'Non-Students' && !member.studentInfo?.isStudent);
+    // Portfolio filter
+    const mPortfolio = getMemberPortfolio(member);
+    const matchesPortfolio = portfolioFilter === 'All' || mPortfolio === portfolioFilter;
 
     // Residence filter
-    const matchesResidence = residenceFilter === 'All' || member.residence === residenceFilter;
+    const matchesResidence =
+      residenceFilter === 'All' ||
+      member.residence === residenceFilter ||
+      member.hostelOrResidence === residenceFilter;
 
-    return matchesSearch && matchesStatus && matchesStudent && matchesResidence;
+    return matchesSearch && matchesStatus && matchesPortfolio && matchesResidence;
   });
 
   const today = new Date().toISOString().split('T')[0];
@@ -84,49 +98,49 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
         <div>
           <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <Users className="w-5 h-5 text-orange-400" />
-            Members & Students Directory
+            Members & Portfolios Directory
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Complete database of {members.length} KIU & Makindye fellowship souls • Fast identification & records
+            Complete database of {members.length} members across Schools, Alumni, and Community portfolios
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={exportMembersCsv}
-            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export CSV</span>
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Download CSV</span>
           </button>
 
           <button
             onClick={onOpenRegister}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95 border border-orange-400/30"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95 border border-orange-400/30 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Register New Soul</span>
+            <span>Register New Member</span>
           </button>
         </div>
       </div>
 
-      {/* Filters Card */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 shadow-md">
+      {/* Filter & Search Bar */}
+      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3.5 shadow-md">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           
-          {/* Global Search Input */}
+          {/* Search box */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, MAN-ID, phone, residence..."
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+              placeholder="Search name, phone, MAN-ID..."
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
             />
           </div>
 
-          {/* Member Status Filter */}
+          {/* Status Filter */}
           <div>
             <select
               value={statusFilter}
@@ -142,16 +156,17 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
             </select>
           </div>
 
-          {/* Student Status Filter */}
+          {/* Portfolio Filter: Schools, Alumni, Community */}
           <div>
             <select
-              value={studentFilter}
-              onChange={(e) => setStudentFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500"
+              value={portfolioFilter}
+              onChange={(e) => setPortfolioFilter(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500 font-semibold"
             >
-              <option value="All">All Profiles (Students & Working)</option>
-              <option value="Students">University Students</option>
-              <option value="Non-Students">Non-Students / Working</option>
+              <option value="All">All Portfolios ({members.length})</option>
+              <option value="Schools">🎓 Schools ({schoolsCount})</option>
+              <option value="Alumni">🏛️ Alumni ({alumniCount})</option>
+              <option value="Community">🤝 Community ({communityCount})</option>
             </select>
           </div>
 
@@ -173,19 +188,19 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
 
         </div>
 
-        {/* Quick Filter Tags */}
+        {/* Quick Filter Tags with real counts */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
-          <span className="text-slate-500 font-medium mr-1">Quick Views:</span>
+          <span className="text-slate-500 font-medium mr-1">Portfolios & Views:</span>
           
           <button
             onClick={() => {
               setStatusFilter('All');
-              setStudentFilter('All');
+              setPortfolioFilter('All');
               setResidenceFilter('All');
               setSearchQuery('');
             }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
-              statusFilter === 'All' && studentFilter === 'All' && residenceFilter === 'All'
+            className={`px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+              statusFilter === 'All' && portfolioFilter === 'All' && residenceFilter === 'All'
                 ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
@@ -194,25 +209,50 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
           </button>
 
           <button
+            onClick={() => setPortfolioFilter('Schools')}
+            className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+              portfolioFilter === 'Schools'
+                ? 'bg-blue-500 text-white font-bold'
+                : 'bg-slate-800 text-blue-300 hover:bg-slate-700'
+            }`}
+          >
+            <GraduationCap className="w-3 h-3" />
+            <span>Schools ({schoolsCount})</span>
+          </button>
+
+          <button
+            onClick={() => setPortfolioFilter('Alumni')}
+            className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+              portfolioFilter === 'Alumni'
+                ? 'bg-purple-500 text-white font-bold'
+                : 'bg-slate-800 text-purple-300 hover:bg-slate-700'
+            }`}
+          >
+            <Building className="w-3 h-3" />
+            <span>Alumni ({alumniCount})</span>
+          </button>
+
+          <button
+            onClick={() => setPortfolioFilter('Community')}
+            className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+              portfolioFilter === 'Community'
+                ? 'bg-emerald-500 text-white font-bold'
+                : 'bg-slate-800 text-emerald-300 hover:bg-slate-700'
+            }`}
+          >
+            <Briefcase className="w-3 h-3" />
+            <span>Community ({communityCount})</span>
+          </button>
+
+          <button
             onClick={() => setStatusFilter('First Timer')}
-            className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
               statusFilter === 'First Timer'
                 ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'bg-slate-800 text-amber-300 hover:bg-slate-700'
             }`}
           >
-            🌟 First Timers ({members.filter((m) => m.status === 'First Timer' || m.isFirstTimer).length})
-          </button>
-
-          <button
-            onClick={() => setStudentFilter('Students')}
-            className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
-              studentFilter === 'Students'
-                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            🎓 University Students ({members.filter((m) => m.studentInfo?.isStudent).length})
+            🌟 First Timers ({firstTimersCount})
           </button>
         </div>
       </div>
@@ -226,14 +266,16 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                 <th className="py-3 px-4">Member / Name</th>
                 <th className="py-3 px-4">Identification</th>
                 <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Student & Campus</th>
-                <th className="py-3 px-4">Area / Residence</th>
+                <th className="py-3 px-4">Portfolio & Affiliation</th>
+                <th className="py-3 px-4">Hostel / Residence</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-800">
               {filteredMembers.map((member) => {
+                const p = getMemberPortfolio(member);
+
                 return (
                   <tr
                     key={member.id}
@@ -290,19 +332,51 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                       </span>
                     </td>
 
-                    {/* Academic Profile */}
+                    {/* Portfolio & Details */}
                     <td className="py-3 px-4">
-                      {member.studentInfo?.isStudent ? (
+                      {p === 'Schools' ? (
                         <div>
-                          <div className="font-medium text-slate-200 truncate max-w-[170px]">
-                            {member.studentInfo.course || 'Student'}
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                              Schools
+                            </span>
+                            <span className="font-medium text-slate-200 truncate max-w-[160px]">
+                              {member.studentInfo?.course || 'University Student'}
+                            </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate max-w-[170px]">
-                            Yr {member.studentInfo?.yearOfStudy || 1} • {member.studentInfo?.campus?.split('-')?.[0] || member.studentInfo?.campus || 'Campus'}
+                          <div className="text-[10px] text-slate-400 truncate max-w-[180px] mt-0.5">
+                            {member.studentInfo?.yearOfStudy ? `Yr ${member.studentInfo.yearOfStudy} • ` : ''}
+                            {member.studentInfo?.campus?.split('(')[0]?.trim() || member.studentInfo?.campus || 'Campus'}
+                          </div>
+                        </div>
+                      ) : p === 'Alumni' ? (
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              Alumni
+                            </span>
+                            <span className="font-medium text-purple-200 truncate max-w-[160px]">
+                              {member.studentInfo?.course || 'Fellowship Graduate'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-purple-300/70 truncate max-w-[180px] mt-0.5">
+                            {member.studentInfo?.campus || 'Graduate Network'}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-500 italic">Professional / Alumni</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Community
+                            </span>
+                            <span className="font-medium text-emerald-200 truncate max-w-[160px]">
+                              {member.studentInfo?.course || member.notes || 'Community Partner'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-emerald-400/70 truncate max-w-[180px] mt-0.5">
+                            {member.studentInfo?.campus || 'Area Resident'}
+                          </div>
+                        </div>
                       )}
                     </td>
 
@@ -310,7 +384,9 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5 text-xs text-slate-300">
                         <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>{member.residence || 'Kansanga'}</span>
+                        <span className="truncate max-w-[150px] font-medium" title={member.hostelOrResidence || member.residence}>
+                          {member.hostelOrResidence || member.residence || 'Kansanga'}
+                        </span>
                       </div>
                     </td>
 
@@ -321,7 +397,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                         {/* QR Badge Card button */}
                         <button
                           onClick={() => onViewIdCard(member)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors cursor-pointer"
                           title="View Digital Member Pass & QR"
                         >
                           <QrCode className="w-3.5 h-3.5" />
@@ -330,7 +406,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                         {/* View Full Profile */}
                         <button
                           onClick={() => onSelectMember(member)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
                           title="View Full Profile"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -359,7 +435,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
             Showing <strong className="text-white">{filteredMembers.length}</strong> of {members.length} registered members
           </span>
           <span className="text-[11px] text-slate-500">
-            Manifest Fellowship Operational System
+            Manifest Fellowship Operational System • Model Admin View
           </span>
         </div>
       </div>

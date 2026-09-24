@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member, MemberStatus, UGANDA_UNIVERSITIES } from '../../types';
+import { Member, MemberStatus, MemberPortfolio, UGANDA_UNIVERSITIES } from '../../types';
 import { useFellowship } from '../../context/FellowshipContext';
 import {
   X,
@@ -11,6 +11,9 @@ import {
   Phone,
   Mail,
   QrCode,
+  Building,
+  Briefcase,
+  Users,
 } from 'lucide-react';
 
 interface MemberProfileModalProps {
@@ -40,6 +43,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<MemberStatus>('Active');
+  const [portfolio, setPortfolio] = useState<MemberPortfolio>('Schools');
   const [course, setCourse] = useState('');
   const [campus, setCampus] = useState('');
   const [yearOfStudy, setYearOfStudy] = useState(1);
@@ -49,6 +53,10 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     if (member) {
       const derivedFirst = member.firstName || member.fullName.split(' ')[1] || member.fullName.split(' ')[0] || '';
       const derivedLast = member.lastName || (member.fullName.split(' ').length > 1 ? member.fullName.split(' ')[0] : member.fullName);
+      const derivedPortfolio: MemberPortfolio =
+        member.portfolio ||
+        (member.status === 'Graduated' ? 'Alumni' : member.studentInfo?.isStudent ? 'Schools' : 'Community');
+
       setFirstName(derivedFirst);
       setLastName(derivedLast);
       setHostelOrResidence(member.hostelOrResidence || member.residence || '');
@@ -56,6 +64,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
       setPhone(member.phone);
       setEmail(member.email);
       setStatus(member.status);
+      setPortfolio(derivedPortfolio);
       setCourse(member.studentInfo?.course || '');
       setCampus(member.studentInfo?.campus || '');
       setYearOfStudy(member.studentInfo?.yearOfStudy || 1);
@@ -78,12 +87,14 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
       phone: phone.trim(),
       email: email.trim(),
       status,
+      portfolio,
       notes: notes || undefined,
       studentInfo: {
         ...member.studentInfo,
+        isStudent: portfolio === 'Schools',
         course,
         campus,
-        yearOfStudy: Number(yearOfStudy),
+        yearOfStudy: portfolio === 'Schools' ? Number(yearOfStudy) : undefined,
       },
     });
     setIsEditing(false);
@@ -98,6 +109,10 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     'Graduated',
     'Archived',
   ];
+
+  const currentPortfolio: MemberPortfolio =
+    member.portfolio ||
+    (member.status === 'Graduated' ? 'Alumni' : member.studentInfo?.isStudent ? 'Schools' : 'Community');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -114,21 +129,44 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white leading-tight">{member.fullName}</h3>
-                <span className="font-mono text-[11px] font-bold text-orange-400 bg-orange-950/80 border border-orange-800/80 px-2 py-0.5 rounded">
+                <h2 className="text-base font-bold text-white">{member.fullName}</h2>
+                {member.preferredName && (
+                  <span className="text-xs text-slate-400 font-normal">
+                    ({member.preferredName})
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-orange-400 font-mono text-[10px] font-bold border border-slate-700">
                   {member.id}
                 </span>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-slate-500" />
-                  {member.phone}
+                {/* Portfolio Tag */}
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${
+                    currentPortfolio === 'Schools'
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      : currentPortfolio === 'Alumni'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}
+                >
+                  {currentPortfolio === 'Schools' && <GraduationCap className="w-3 h-3" />}
+                  {currentPortfolio === 'Alumni' && <Building className="w-3 h-3" />}
+                  {currentPortfolio === 'Community' && <Briefcase className="w-3 h-3" />}
+                  <span>Portfolio: {currentPortfolio}</span>
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-slate-500" />
-                  {member.email}
+
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    member.status === 'Active'
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : member.status === 'First Timer'
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  {member.status}
                 </span>
               </div>
             </div>
@@ -137,67 +175,57 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onViewIdCard(member)}
-              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              title="View Digital Pass & QR"
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 transition-colors"
+              title="View Digital ID Pass & QR"
             >
               <QrCode className="w-4 h-4" />
-              <span className="hidden sm:inline">Pass & QR</span>
             </button>
+
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit Profile
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Changes
+              </button>
+            )}
 
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Action bar with edit/save */}
-        <div className="px-5 py-2.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-300">Member Profile Details</span>
-            <span className="text-[11px] text-slate-500">• Kampala International University</span>
-          </div>
-
-          <div>
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1 transition-colors"
-              >
-                <Edit2 className="w-3 h-3" /> Edit
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-slate-950 text-xs font-bold flex items-center gap-1 transition-colors"
-              >
-                <Save className="w-3 h-3" /> Save Changes
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
-          <div className="space-y-4">
+        {/* Content body */}
+        <div className="p-5 overflow-y-auto space-y-4 flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Left Column: Contact & Core Details */}
+            <div className="space-y-4">
               
-              {/* Registration PIN & Core Identification Card */}
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-amber-400" />
-                    Registration PIN Details
-                  </div>
-                  <span className="font-mono text-[11px] font-extrabold text-amber-400 bg-slate-900 border border-amber-500/40 px-2 py-0.5 rounded">
-                    PIN: {member.id}
+              {/* Registration PIN Record */}
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+                <div className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    Registration PIN Information
                   </span>
+                  <span className="font-mono text-amber-400 text-xs font-black">{member.id}</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <span className="text-amber-200/70 block text-[10px] font-semibold">Name (Surname / Last Name)</span>
+                    <span className="text-amber-200/70 block text-[10px] font-semibold">Name (Surname)</span>
                     {!isEditing ? (
                       <span className="font-bold text-white text-xs">{lastName || member.lastName || member.fullName.split(' ')[0]}</span>
                     ) : (
@@ -262,8 +290,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                     )}
                   </div>
 
-                  <div>
-                    <span className="text-amber-200/70 block text-[10px] font-semibold">Hostel or Residence</span>
+                  <div className="sm:col-span-2">
+                    <span className="text-amber-200/70 block text-[10px] font-semibold">Hostel or Residence (Direct Entry)</span>
                     {!isEditing ? (
                       <span className="font-bold text-emerald-300 text-xs">{member.hostelOrResidence || member.residence || hostelOrResidence || 'Not specified'}</span>
                     ) : (
@@ -276,17 +304,40 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                       />
                     )}
                   </div>
+                </div>
+              </div>
 
+              {/* Contact Information */}
+              <div className="p-4 rounded-xl bg-slate-850/60 border border-slate-800 space-y-2.5">
+                <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-orange-400" />
+                  Contact Information
+                </div>
+
+                <div className="space-y-2">
                   <div>
-                    <span className="text-amber-200/70 block text-[10px] font-semibold">Phone Contact (WhatsApp / Call)</span>
+                    <span className="text-slate-400 block text-[10px]">Phone Number</span>
                     {!isEditing ? (
-                      <span className="font-bold text-amber-300 text-xs">{member.phone}</span>
+                      <span className="font-semibold text-slate-200 text-xs">{member.phone}</span>
                     ) : (
                       <input
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+256 700 000000"
+                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Email Address</span>
+                    {!isEditing ? (
+                      <span className="font-semibold text-slate-200 text-xs">{member.email || 'N/A'}</span>
+                    ) : (
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
                       />
                     )}
@@ -294,45 +345,54 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 </div>
               </div>
 
-              {/* Status Banner */}
-              <div className="p-3 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <div className="text-[11px] text-slate-400 font-medium">Lifecycle Status</div>
-                  {!isEditing ? (
-                    <div className="text-sm font-extrabold text-orange-400 mt-0.5">{member.status}</div>
-                  ) : (
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as MemberStatus)}
-                      className="mt-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
-                    >
-                      {statusOptions.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+            </div>
 
-                <div className="text-right">
-                  <div className="text-[11px] text-slate-400 font-medium">First Attended</div>
-                  <div className="text-xs font-semibold text-slate-200 mt-0.5">
-                    {member.dateOfFirstAttendance || '2026-08-20'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Student & Academic Info */}
+            {/* Right Column: Portfolio, Education & Notes */}
+            <div className="space-y-4">
+              
+              {/* Portfolio & Academic Details */}
               <div className="p-4 rounded-xl bg-slate-850/60 border border-slate-800 space-y-2.5">
-                <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-orange-400" />
-                  Academic Profile
+                <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-orange-400" />
+                    Portfolio & Affiliation
+                  </span>
+                  <span className="text-[10px] text-slate-400">Schools • Alumni • Community</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {isEditing && (
+                  <div className="pb-2 border-b border-slate-800">
+                    <span className="text-slate-400 block text-[10px] mb-1">Select Portfolio</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['Schools', 'Alumni', 'Community'] as MemberPortfolio[]).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPortfolio(p)}
+                          className={`py-1 px-2 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            portfolio === p
+                              ? p === 'Schools'
+                                ? 'bg-blue-600 text-white'
+                                : p === 'Alumni'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-emerald-600 text-white'
+                              : 'bg-slate-800 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2.5">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">University / Institution</span>
+                    <span className="text-slate-400 block text-[10px]">
+                      {portfolio === 'Schools' ? 'University / School' : portfolio === 'Alumni' ? 'Alma Mater' : 'Organization / Community Role'}
+                    </span>
                     {!isEditing ? (
-                      <span className="font-semibold text-slate-200">{member.studentInfo?.campus || 'N/A'}</span>
+                      <span className="font-semibold text-slate-200 text-xs">{member.studentInfo?.campus || 'N/A'}</span>
                     ) : (
                       <>
                         <input
@@ -340,7 +400,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                           list="uganda-universities-list"
                           value={campus}
                           onChange={(e) => setCampus(e.target.value)}
-                          placeholder="Select or enter university..."
+                          placeholder="Select or enter institution..."
                           className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
                         />
                         <datalist id="uganda-universities-list">
@@ -353,30 +413,17 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Course / Program</span>
+                    <span className="text-slate-400 block text-[10px]">
+                      {portfolio === 'Schools' ? 'Course / Program' : portfolio === 'Alumni' ? 'Degree Completed' : 'Occupation / Field'}
+                    </span>
                     {!isEditing ? (
-                      <span className="font-semibold text-slate-200">{member.studentInfo?.course || 'Non-Student'}</span>
+                      <span className="font-semibold text-slate-200 text-xs">{member.studentInfo?.course || 'Not specified'}</span>
                     ) : (
                       <input
                         type="text"
                         value={course}
                         onChange={(e) => setCourse(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Year of Study</span>
-                    {!isEditing ? (
-                      <span className="font-semibold text-slate-200">Year {member.studentInfo?.yearOfStudy || 'N/A'}</span>
-                    ) : (
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={yearOfStudy}
-                        onChange={(e) => setYearOfStudy(Number(e.target.value))}
+                        placeholder="e.g. Program / Degree / Profession"
                         className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white"
                       />
                     )}
@@ -384,35 +431,27 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 </div>
               </div>
 
-              {/* Notes */}
-              <div>
-                <span className="text-slate-400 block text-[11px] font-semibold mb-1">Administrative Notes</span>
+              {/* Administrative Notes */}
+              <div className="p-4 rounded-xl bg-slate-850/60 border border-slate-800 space-y-2">
+                <span className="text-slate-400 block text-[11px] font-semibold">Administrative Notes</span>
                 {!isEditing ? (
-                  <p className="p-3 rounded-lg bg-slate-850 border border-slate-800 text-slate-300">
-                    {member.notes || 'No administrative notes recorded.'}
+                  <p className="text-xs text-slate-300 leading-relaxed italic bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                    {member.notes || 'No administrative notes recorded for this member.'}
                   </p>
                 ) : (
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white"
+                    placeholder="Enter notes..."
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white"
                   />
                 )}
               </div>
 
             </div>
-        </div>
 
-        {/* Footer */}
-        <div className="px-6 py-3 bg-slate-850 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Registered on {member.registrationDate}</span>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold"
-          >
-            Close
-          </button>
+          </div>
         </div>
 
       </div>

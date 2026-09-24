@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
-import { Gender, MemberStatus, UGANDA_UNIVERSITIES } from '../../types';
+import { Gender, MemberStatus, MemberPortfolio, UGANDA_UNIVERSITIES } from '../../types';
 import {
   X,
   Sparkles,
@@ -12,6 +12,9 @@ import {
   Phone,
   KeyRound,
   ShieldCheck,
+  Building,
+  Briefcase,
+  Users,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -38,17 +41,28 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   const [yearOfStudy, setYearOfStudy] = useState(1); // Year of Study
   const [hostelOrResidence, setHostelOrResidence] = useState(''); // Direct Custom Hostel / Residence
 
+  // Portfolio Selection: Schools, Alumni, Community
+  const [portfolio, setPortfolio] = useState<MemberPortfolio>('Schools');
+
   // Additional Details (Nickname removed)
   const [gender, setGender] = useState<Gender>('Male');
   const [altPhone, setAltPhone] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
-  // Academic Profile: Ugandan Universities (KIU, MAK, KYU, UCU, etc.)
-  const [isStudent, setIsStudent] = useState(true);
+  // Schools Portfolio: Ugandan Universities
   const [campus, setCampus] = useState<string>('Kampala International University (KIU)');
   const [customUniversity, setCustomUniversity] = useState('');
   const [course, setCourse] = useState('');
+
+  // Alumni Portfolio Fields
+  const [alumniInstitution, setAlumniInstitution] = useState<string>('Kampala International University (KIU)');
+  const [alumniCourse, setAlumniCourse] = useState('');
+  const [alumniGradYear, setAlumniGradYear] = useState('');
+
+  // Community Portfolio Fields
+  const [communityOccupation, setCommunityOccupation] = useState('');
+  const [communityAffiliation, setCommunityAffiliation] = useState('');
 
   // First attendance date
   const [dateOfFirstAttendance] = useState(
@@ -58,11 +72,10 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   if (!isOpen) return null;
 
   const effectiveHostel = hostelOrResidence.trim();
-  const effectiveCampus = isStudent
-    ? (campus === 'Other University / Higher Institution'
-        ? customUniversity.trim() || 'Other Higher Institution'
-        : campus)
-    : 'Non-Student / Working Professional';
+  const effectiveCampus =
+    campus === 'Other University / Higher Institution'
+      ? customUniversity.trim() || 'Other Higher Institution'
+      : campus;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +86,17 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
     const fullName = `${lastName.trim()} ${firstName.trim()}`;
     const isFirstTimer = status === 'First Timer';
+
+    let resolvedCampus = effectiveCampus;
+    let resolvedCourse = course.trim();
+
+    if (portfolio === 'Alumni') {
+      resolvedCampus = alumniInstitution.trim() || 'Ugandan University Graduate';
+      resolvedCourse = alumniCourse.trim() || 'Fellowship Alumni';
+    } else if (portfolio === 'Community') {
+      resolvedCampus = communityAffiliation.trim() || 'Community & Professional Network';
+      resolvedCourse = communityOccupation.trim() || 'Community Partner';
+    }
 
     const newMember = addMember({
       fullName,
@@ -86,15 +110,22 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
       dateOfBirth: dateOfBirth || undefined,
       hostelOrResidence: effectiveHostel,
       residence: effectiveHostel.split(',')[0],
+      portfolio,
       studentInfo: {
-        isStudent,
-        campus: effectiveCampus,
-        course: isStudent ? course.trim() : undefined,
-        yearOfStudy: isStudent ? Number(yearOfStudy) : undefined,
+        isStudent: portfolio === 'Schools',
+        campus: resolvedCampus,
+        course: resolvedCourse || undefined,
+        yearOfStudy: portfolio === 'Schools' ? Number(yearOfStudy) : undefined,
       },
       status,
       isFirstTimer,
       dateOfFirstAttendance,
+      notes:
+        portfolio === 'Alumni' && alumniGradYear
+          ? `Alumni Class of ${alumniGradYear}`
+          : portfolio === 'Community' && communityOccupation
+          ? `Occupation: ${communityOccupation}`
+          : undefined,
     });
 
     // Trigger celebratory confetti
@@ -118,15 +149,18 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
         {/* Header */}
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <KeyRound className="w-4 h-4" />
+            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-white text-base tracking-tight">
-                Manifest Member Fast Registration & PIN Issuer
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                Member Registration
+                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30">
+                  PIN System
+                </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Issues unique Registration PIN with Name, First Name, Fellowship Status, Year of Study, Hostel & Phone
+                Register new members across Schools, Alumni, and Community portfolios
               </p>
             </div>
           </div>
@@ -139,7 +173,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
           </button>
         </div>
 
-        {/* Multi-step progress indicator (Step 1: PIN Fields, Step 2: Academic Profile) */}
+        {/* Multi-step progress indicator */}
         <div className="px-6 py-3 bg-slate-950/50 border-b border-slate-800/80 flex items-center justify-between text-xs">
           <button
             type="button"
@@ -160,7 +194,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">2</span>
-            <span>Academic Profile</span>
+            <span>Portfolios (Schools, Alumni, Community)</span>
           </button>
         </div>
 
@@ -178,28 +212,50 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                   </span>
                 </div>
                 <span className="text-[10px] text-amber-400/80 font-mono">
-                  Core PIN Credentials
+                  Primary Access Key
                 </span>
               </div>
 
-              {/* Name (Surname) and First Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Fellowship Status in PIN Fields */}
+              <div>
+                <label className="block text-xs font-semibold text-amber-300 mb-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  Fellowship Status <span className="text-rose-400">*</span>
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as MemberStatus)}
+                  className="w-full bg-slate-800 border-2 border-amber-500/50 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-semibold"
+                >
+                  <option value="First Timer">🌟 First Timer (Visiting for the first time)</option>
+                  <option value="Active">Active Fellowship Member</option>
+                  <option value="Returning Visitor">Returning Visitor</option>
+                  <option value="Graduated">Graduated / Alumni</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Fellowship status is embedded directly in this registration record.
+                </p>
+              </div>
+
+              {/* Names: Surname + First Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Name (Surname / Last Name) <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-200 mb-1">
+                    Name (Surname) <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="e.g. Mugisha"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    placeholder="e.g. Mugisha, Kigozi, Namubiru"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-200 mb-1">
                     First Name <span className="text-rose-400">*</span>
                   </label>
                   <input
@@ -207,143 +263,160 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="e.g. Brian"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    placeholder="e.g. Samuel, Esther, David"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-medium"
                   />
                 </div>
               </div>
 
-              {/* Fellowship Status & Phone Contact */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Phone Contact & Year of Study */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-amber-400" />
-                    Fellowship Status <span className="text-rose-400">*</span>
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as MemberStatus)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-semibold text-amber-300 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="First Timer">🌟 First Timer</option>
-                    <option value="Returning Visitor">Returning Visitor</option>
-                    <option value="Active">Active Regular Member</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-yellow-400" />
-                    Phone Contact (WhatsApp/Call) <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-200 mb-1 flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-amber-400" />
+                    Phone Contact <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+256 701 892341"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    placeholder="+256 700 000000"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
                   />
                 </div>
-              </div>
 
-              {/* Year of Study & Hostel / Residence */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                    <GraduationCap className="w-3 h-3 text-cyan-400" />
-                    Year of Study <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-200 mb-1">
+                    Year of Study
                   </label>
                   <select
                     value={yearOfStudy}
                     onChange={(e) => setYearOfStudy(Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-semibold text-cyan-300"
-                  >
-                    <option value={1}>Year 1 (Fresher)</option>
-                    <option value={2}>Year 2</option>
-                    <option value={3}>Year 3</option>
-                    <option value={4}>Year 4</option>
-                    <option value={5}>Year 5 (Medicine / Engineering)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-emerald-400" />
-                    Hostel or Residence <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={hostelOrResidence}
-                    onChange={(e) => setHostelOrResidence(e.target.value)}
-                    placeholder="Enter hostel, hall, or residence area..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-medium text-emerald-300"
-                  />
-                </div>
-              </div>
-
-              {/* Additional Personal Details (Nickname removed) */}
-              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value as Gender)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                    <option value={1}>Year 1 (Freshman)</option>
+                    <option value={2}>Year 2 (Sophomore)</option>
+                    <option value={3}>Year 3 (Penultimate / Junior)</option>
+                    <option value={4}>Year 4 (Senior)</option>
+                    <option value={5}>Year 5+ (Medical / Engineering / Postgrad)</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Email Address (Optional)
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="brian.mugi@gmail.com"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
                 </div>
               </div>
 
-              {status === 'First Timer' && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+              {/* Direct Custom Hostel / Residence */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-200 mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                  Hostel or Residence (Direct Entry) <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={hostelOrResidence}
+                  onChange={(e) => setHostelOrResidence(e.target.value)}
+                  placeholder="e.g. Olympia Hostel, Nana Hostel, Kansanga, Kabalagala..."
+                  className="w-full bg-slate-800 border-2 border-slate-700 focus:border-amber-500 rounded-lg px-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none font-medium transition-all"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Direct custom input. People in the same hostel/residence are automatically organized into fellowship groups.
+                </p>
+              </div>
+
+              {/* Additional Contact Info */}
+              <div className="pt-2 border-t border-slate-800/80">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <span className="font-bold">First-Timer Welcome Protocol:</span> A digital Registration PIN pass and membership profile will be generated instantly for immediate scanning and verification.
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as Gender)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Email (Optional)</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. member@gmail.com"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
-          {/* STEP 2: STUDENT & ACADEMIC INFORMATION */}
+          {/* STEP 2: PORTFOLIOS (SCHOOLS, ALUMNI, COMMUNITY) */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5" />
-                  Step 2: Academic Profile
+                  Step 2: Member Portfolio Assignment
                 </span>
-
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={isStudent}
-                    onChange={(e) => setIsStudent(e.target.checked)}
-                    className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5"
-                  />
-                  <span>Is Currently a Student</span>
-                </label>
+                <span className="text-[10px] text-slate-400">Choose fellowship portfolio</span>
               </div>
 
-              {isStudent ? (
-                <div className="space-y-3.5">
+              {/* Portfolio Selection Tabs */}
+              <div className="grid grid-cols-3 gap-2 p-1.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setPortfolio('Schools')}
+                  className={`p-2.5 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    portfolio === 'Schools'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>Schools</span>
+                  <span className="text-[9px] font-normal opacity-80">Students & Scholars</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPortfolio('Alumni')}
+                  className={`p-2.5 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    portfolio === 'Alumni'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Building className="w-4 h-4" />
+                  <span>Alumni</span>
+                  <span className="text-[9px] font-normal opacity-80">Graduates & Elders</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPortfolio('Community')}
+                  className={`p-2.5 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    portfolio === 'Community'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Community</span>
+                  <span className="text-[9px] font-normal opacity-80">Professionals & Area</span>
+                </button>
+              </div>
+
+              {/* Details based on Portfolio */}
+              {portfolio === 'Schools' && (
+                <div className="space-y-3.5 p-4 rounded-xl bg-slate-850/60 border border-blue-500/20">
+                  <div className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-blue-400" />
+                    Schools Portfolio: University & Campus Information
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
                       University / Higher Institution <span className="text-rose-400">*</span>
@@ -351,7 +424,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                     <select
                       value={campus}
                       onChange={(e) => setCampus(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium text-amber-300"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-medium text-blue-300"
                     >
                       {UGANDA_UNIVERSITIES.map((univ) => (
                         <option key={univ} value={univ}>
@@ -367,7 +440,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                         value={customUniversity}
                         onChange={(e) => setCustomUniversity(e.target.value)}
                         placeholder="Type specific university or college name..."
-                        className="mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        className="mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                     )}
                   </div>
@@ -379,16 +452,94 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
                       value={course}
                       onChange={(e) => setCourse(e.target.value)}
                       placeholder="e.g. Bachelor of Laws / BSc Software Engineering / BPharm"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-slate-850 border border-slate-800 text-xs text-slate-300">
-                  <p className="font-semibold text-white">Non-Student Member / Working Professional</p>
-                  <p className="mt-1 text-slate-400">
-                    This profile will be categorized under Alumni & Associates Fellowship network.
-                  </p>
+              )}
+
+              {portfolio === 'Alumni' && (
+                <div className="space-y-3.5 p-4 rounded-xl bg-slate-850/60 border border-purple-500/20">
+                  <div className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                    <Building className="w-4 h-4 text-purple-400" />
+                    Alumni Portfolio: Graduate & Career Information
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Graduated University / Alma Mater
+                    </label>
+                    <select
+                      value={alumniInstitution}
+                      onChange={(e) => setAlumniInstitution(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-medium text-purple-300"
+                    >
+                      {UGANDA_UNIVERSITIES.map((univ) => (
+                        <option key={univ} value={univ}>
+                          {univ}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Degree / Course Completed</label>
+                      <input
+                        type="text"
+                        value={alumniCourse}
+                        onChange={(e) => setAlumniCourse(e.target.value)}
+                        placeholder="e.g. Bachelor of Medicine, BBA, LLB"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Graduation Year / Cohort</label>
+                      <input
+                        type="text"
+                        value={alumniGradYear}
+                        onChange={(e) => setAlumniGradYear(e.target.value)}
+                        placeholder="e.g. 2024, 2025"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {portfolio === 'Community' && (
+                <div className="space-y-3.5 p-4 rounded-xl bg-slate-850/60 border border-emerald-500/20">
+                  <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4 text-emerald-400" />
+                    Community Portfolio: Neighborhood & Professional Affiliation
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Occupation / Field of Work
+                    </label>
+                    <input
+                      type="text"
+                      value={communityOccupation}
+                      onChange={(e) => setCommunityOccupation(e.target.value)}
+                      placeholder="e.g. Healthcare Professional, Civil Engineer, Business Owner, Educator"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Organization / Business / Area Role
+                    </label>
+                    <input
+                      type="text"
+                      value={communityAffiliation}
+                      onChange={(e) => setCommunityAffiliation(e.target.value)}
+                      placeholder="e.g. Makindye Community Leader / Kansanga Business Forum / Private Practice"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -400,14 +551,14 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to PIN Fields
               </button>
             ) : (
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs flex items-center gap-1.5 transition-colors border border-slate-700 cursor-pointer"
               >
                 <CheckCircle className="w-3.5 h-3.5" /> Fast Register
               </button>
@@ -417,14 +568,14 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                Academic Profile <ArrowRight className="w-3.5 h-3.5" />
+                Portfolio Details <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all active:scale-95"
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>Register Member & Issue Registration PIN</span>
@@ -437,4 +588,3 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
     </div>
   );
 };
-

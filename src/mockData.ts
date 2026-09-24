@@ -78,8 +78,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'aud-001',
     timestamp: '2026-08-20T10:00:00Z',
-    userName: 'Admin',
-    userRole: 'Super Admin',
+    userName: 'Model Admin',
+    userRole: 'Model Admin',
     module: 'System',
     action: 'Workspace Initialized',
     targetEntityId: 'sys-init',

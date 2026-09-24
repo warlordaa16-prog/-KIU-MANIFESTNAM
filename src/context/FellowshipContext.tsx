@@ -174,7 +174,7 @@ const sanitizeItemsWithUniqueIds = <T extends { id: string }>(items: T[], prefix
 
 export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUserRole, setCurrentUserRoleState] = useState<UserRole>(() => {
-    return (localStorage.getItem(`${STORAGE_PREFIX}role`) as UserRole) || 'Super Admin';
+    return 'Model Admin';
   });
 
   const [currentUserName, setCurrentUserName] = useState<string>(() => {
@@ -1240,7 +1240,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setProjects(INITIAL_PROJECTS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setMessages(INITIAL_MESSAGES);
-    setCurrentUserRoleState('Super Admin');
+    setCurrentUserRoleState('Model Admin');
     showToast('Reset system to default seed data.', 'info');
   };
 
@@ -1292,31 +1292,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  // Permission Checker
-  const hasPermission = (module: string, action: string): boolean => {
-    if (currentUserRole === 'Super Admin' || currentUserRole === 'Fellowship Admin') return true;
-
-    if (module === 'Finance') {
-      if (currentUserRole === 'Finance Admin') return true;
-      if (currentUserRole === 'Finance Officer' && (action === 'view' || action === 'record')) return true;
-      if (currentUserRole === 'Auditor' && action === 'view') return true;
-      if (currentUserRole === 'Department Leader' && (action === 'request' || action === 'view_department')) return true;
-      return false;
-    }
-
-    if (module === 'Attendance') {
-      if (currentUserRole === 'Attendance Officer' || currentUserRole === 'Coordinator') return true;
-      return true;
-    }
-
-    if (module === 'Homes') {
-      return true;
-    }
-
-    if (module === 'Admin') {
-      return currentUserRole === 'Super Admin' || currentUserRole === 'Fellowship Admin';
-    }
-
+  // Permission Checker: Model Admin has unrestricted system-wide access
+  const hasPermission = (_module: string, _action: string): boolean => {
     return true;
   };
 

@@ -213,10 +213,10 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
                 </span>
               </div>
 
-              {/* Field 3: Portfolio (Schools, Alumni, Community) */}
+              {/* Field 3: Academic Portfolio (Schools, Alumni, Community) */}
               <div className="flex items-start justify-between gap-2 border-b border-slate-850 pb-1.5">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold flex items-center gap-1 shrink-0">
-                  <GraduationCap className="w-3 h-3 text-cyan-400" /> Portfolio:
+                  <GraduationCap className="w-3 h-3 text-cyan-400" /> Academic Portfolio:
                 </span>
                 <span className="font-bold text-cyan-300 text-right">
                   {member.portfolio || (member.status === 'Graduated' ? 'Alumni' : member.studentInfo?.isStudent ? 'Schools' : 'Community')}

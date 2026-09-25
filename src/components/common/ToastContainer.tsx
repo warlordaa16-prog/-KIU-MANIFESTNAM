@@ -34,7 +34,16 @@ export const ToastContainer: React.FC = () => {
             className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-2xl backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-3 duration-200 ${bgColor}`}
           >
             <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
-            <div className="flex-1 text-xs font-medium leading-relaxed">{toast.message}</div>
+            <div className="flex-1 text-xs font-medium leading-relaxed">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                {toast.operator && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-orange-400 font-bold border border-slate-700 font-mono">
+                    {toast.operator}
+                  </span>
+                )}
+              </div>
+              <div>{toast.message}</div>
+            </div>
             <button
               onClick={() => removeToast(toast.id)}
               className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-colors"

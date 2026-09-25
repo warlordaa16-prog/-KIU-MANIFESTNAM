@@ -30,7 +30,7 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
   onClose,
   onSuccess,
 }) => {
-  const { addMember } = useFellowship();
+  const { addMember, currentUserName, activeOperator, operators, setActiveOperatorName } = useFellowship();
 
   // Core Required Registration PIN Fields
   const [lastName, setLastName] = useState(''); // Name (Surname)
@@ -181,6 +181,34 @@ export const MemberRegistrationModal: React.FC<MemberRegistrationModalProps> = (
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+          
+          {/* Active Data Entry Operator attribution banner */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs">
+            <div className="flex items-center gap-2">
+              <div className={`w-3.5 h-3.5 rounded-full ${activeOperator.avatarColor} ring-2 ring-white/20`} />
+              <span className="text-slate-300">Data Entering Party:</span>
+              <span className="font-bold text-white text-sm text-emerald-300">{currentUserName}</span>
+              <span className="text-[11px] text-slate-400">({activeOperator.deskName})</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="text-slate-400 mr-1">Switch Party:</span>
+              {operators.map((op) => (
+                <button
+                  key={op.id}
+                  type="button"
+                  onClick={() => setActiveOperatorName(op.name)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                    op.name.toLowerCase() === currentUserName.toLowerCase()
+                      ? 'bg-orange-500 text-slate-950 font-bold shadow-sm'
+                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                  }`}
+                >
+                  {op.name}
+                </button>
+              ))}
+            </div>
+          </div>
           
           {/* MAIN CONTAINER: REGISTRATION PIN FIELDS & ACADEMIC PORTFOLIO */}
           <div className="rounded-2xl bg-slate-950/70 border-2 border-amber-500/40 p-4 sm:p-5 space-y-5 shadow-xl relative overflow-hidden">

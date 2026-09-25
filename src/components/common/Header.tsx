@@ -23,6 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
     setSearchQuery,
     setActiveTab,
     exportBackupJson,
+    currentUserName,
+    activeOperator,
     members = [],
     homes = [],
     departments = [],
@@ -79,6 +81,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Center: Model Admin & CSV Download */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Active Data Entry Operator Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-750 text-xs font-bold text-slate-200 shadow-sm hidden sm:flex">
+              <div className={`w-2.5 h-2.5 rounded-full ${activeOperator?.avatarColor || 'bg-emerald-500'} ring-1 ring-white/20`} />
+              <span className="text-emerald-300 font-extrabold">{currentUserName}</span>
+            </div>
+
             {/* Model Admin Single Role Indicator */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-xs font-bold text-orange-300 shadow-sm">
               <Shield className="w-3.5 h-3.5 text-orange-400" />

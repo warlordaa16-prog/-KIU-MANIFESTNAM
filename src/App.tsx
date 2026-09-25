@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FellowshipProvider, useFellowship } from './context/FellowshipContext';
 import { Header } from './components/common/Header';
+import { MultiPartyBar } from './components/collaboration/MultiPartyBar';
 import { BottomTaskbar } from './components/common/BottomTaskbar';
 import { WatermarkBackground } from './components/common/WatermarkBackground';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -62,6 +63,9 @@ const MainAppContent: React.FC = () => {
       <Header
         onOpenRegister={() => setIsRegisterOpen(true)}
       />
+
+      {/* Multi-Party Collaborative Bar */}
+      <MultiPartyBar />
 
       {/* Main Dynamic View (Full width without side bar) */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative z-10">

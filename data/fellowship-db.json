@@ -1,0 +1,77 @@
+{
+  "members": [],
+  "homes": [],
+  "departments": [
+    {
+      "id": "dept-choir",
+      "name": "Choir & Worship Ministry",
+      "code": "WRSHP",
+      "leaderId": "PENDING",
+      "leaderName": "To be designated",
+      "leaderPhone": "",
+      "description": "Leading vocal and instrumental worship for all Manifest corporate gatherings.",
+      "meetingSchedule": "Wednesdays 5:00 PM & Saturdays 3:00 PM"
+    },
+    {
+      "id": "dept-media",
+      "name": "Media & Production Tech",
+      "code": "MEDIA",
+      "leaderId": "PENDING",
+      "leaderName": "To be designated",
+      "leaderPhone": "",
+      "description": "Livestream broadcasting, audio engineering, visual projection, photography, and social media.",
+      "meetingSchedule": "Thursdays 4:30 PM & Sundays 8:00 AM"
+    },
+    {
+      "id": "dept-protocol",
+      "name": "Protocol & Ushers",
+      "code": "PROT",
+      "leaderId": "PENDING",
+      "leaderName": "To be designated",
+      "leaderPhone": "",
+      "description": "Welcoming fellowship guests, orderliness, seating management, and registration assistance.",
+      "meetingSchedule": "Thursdays 5:00 PM"
+    },
+    {
+      "id": "dept-intercession",
+      "name": "Intercession & Prayer Altar",
+      "code": "PRAY",
+      "leaderId": "PENDING",
+      "leaderName": "To be designated",
+      "leaderPhone": "",
+      "description": "Continuous prayer coverage, morning prayer watches, and campus intercession vigils.",
+      "meetingSchedule": "Tuesdays & Fridays 6:00 AM"
+    },
+    {
+      "id": "dept-welfare",
+      "name": "Welfare & Pastoral Care",
+      "code": "WLFR",
+      "leaderId": "PENDING",
+      "leaderName": "To be designated",
+      "leaderPhone": "",
+      "description": "Student support, hospital visitations, hostel outreach follow-up, and fresher orientation.",
+      "meetingSchedule": "Mondays 5:00 PM"
+    }
+  ],
+  "events": [],
+  "attendance": [],
+  "income": [],
+  "expenses": [],
+  "budgets": [],
+  "projects": [],
+  "auditLogs": [
+    {
+      "id": "aud-init-001",
+      "timestamp": "2026-09-24T21:34:00.000Z",
+      "userName": "Model Admin",
+      "userRole": "Model Admin",
+      "module": "System",
+      "action": "Workspace Initialized",
+      "targetEntityId": "sys-init",
+      "details": "System database emptied and ready for live data entry.",
+      "result": "Success"
+    }
+  ],
+  "messages": [],
+  "lastUpdated": "2026-09-24T21:34:00.000Z"
+}

@@ -14,6 +14,8 @@ import {
   Building,
   Briefcase,
   Users,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface MemberProfileModalProps {
@@ -31,9 +33,11 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 }) => {
   const {
     updateMember,
+    deleteMember,
   } = useFellowship();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   // Edit states
   const [firstName, setFirstName] = useState('');
@@ -179,6 +183,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
               title="View Digital ID Pass & QR"
             >
               <QrCode className="w-4 h-4" />
+            </button>
+
+            {/* Direct Member Deletion Button */}
+            <button
+              onClick={() => setIsConfirmDeleteOpen(true)}
+              className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 transition-colors cursor-pointer"
+              title="Delete Member Record"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
 
             {!isEditing ? (
@@ -468,6 +481,68 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
           </div>
         </div>
+
+        {/* Modal Footer with Delete Access */}
+        <div className="p-4 bg-slate-850 border-t border-slate-800 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={() => setIsConfirmDeleteOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors font-semibold cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Member Record</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        {/* Confirmation Modal for Member Deletion */}
+        {isConfirmDeleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-slate-900 border border-rose-500/40 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Delete Member Record?</h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Are you sure you want to permanently delete <strong className="text-white">{member.fullName}</strong> ({member.id})? This will remove their record from the fellowship registry across all connected parties.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmDeleteOpen(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteMember(member.id, 'User confirmed deletion from profile view');
+                    setIsConfirmDeleteOpen(false);
+                    onClose();
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

@@ -47,13 +47,62 @@ export interface Member {
   isFirstTimer: boolean;
   dateOfFirstAttendance: string;
   registrationDate: string;
-  howFoundManifest: string; // e.g. "Friend/Member", "Social Media", "Campus Outreach", "Flyer/Poster", "Event"
+  howFoundManifest?: string; // e.g. "Friend/Member", "Social Media", "Campus Outreach", "Flyer/Poster", "Event"
   invitedBy?: string;
   
   homeId?: string; // Legacy / optional
-  departmentIds: string[]; // e.g. ['dept-choir', 'dept-media']
+  departmentIds?: string[]; // e.g. ['dept-choir', 'dept-media']
   
   notes?: string;
+
+  // Real-Time Multi-Party Attribution
+  createdBy?: string; // e.g. "Anibal", "Marcus", "Ahebwa"
+  createdAt?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+  lastActionNote?: string;
+}
+
+export interface CollaborativeOperator {
+  id: string;
+  name: string;
+  roleTitle: string;
+  avatarColor: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  deskName: string;
+  isOnline: boolean;
+  lastSeen?: string;
+  entriesCount?: number;
+}
+
+export interface CollaborativeEvent {
+  id: string;
+  type: 'member:create' | 'member:update' | 'member:delete' | 'family:create' | 'family:update' | 'family:assign' | 'attendance:mark' | 'sync:batch';
+  operator: string;
+  timestamp: string;
+  entityId: string;
+  entityName: string;
+  details: string;
+  data?: any;
+}
+
+export interface QueuedSyncItem {
+  id: string;
+  action: 'createMember' | 'updateMember' | 'deleteMember' | 'batchDeleteMember' | 'createHome' | 'updateHome' | 'deleteHome' | 'recordAttendance';
+  operator: string;
+  timestamp: string;
+  payload: any;
+}
+
+export interface AutoUpdateConfig {
+  enabled: boolean;
+  intervalDays: number; // 7
+  autoPromoteFirstTimers: boolean;
+  autoAssignHostelFamily: boolean;
+  lastRunTimestamp?: string;
+  totalUpdatedCount: number;
 }
 
 export type AttendanceStatus = 'Present' | 'Absent' | 'Excused' | 'Late';

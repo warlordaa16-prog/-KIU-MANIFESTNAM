@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 import {
   Users,
   Layers,
@@ -22,6 +23,11 @@ import {
   CheckCircle2,
   RefreshCw,
   ShieldCheck,
+  Edit3,
+  UserPlus,
+  Smartphone,
+  Check,
+  X,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -40,9 +46,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     operators = [],
     currentUserName,
     setActiveOperatorName,
+    setCustomOperatorName,
+    addCustomOperator,
+    deleteOperator,
     isOnline,
     offlineQueue = [],
-    simulateConcurrentEntryDemo,
     auditLogs = [],
     setActiveTab,
     run7DayAutoUpdate,
@@ -53,6 +61,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [isAutoUpdating, setIsAutoUpdating] = useState(false);
   const [showEmptyConfirmModal, setShowEmptyConfirmModal] = useState(false);
+  const [isEditingOperatorName, setIsEditingOperatorName] = useState(false);
+  const [operatorNameInput, setOperatorNameInput] = useState('');
+  const [showAddOperatorModal, setShowAddOperatorModal] = useState(false);
+  const [newOpName, setNewOpName] = useState('');
+  const [newOpDesk, setNewOpDesk] = useState('');
 
   // Metrics Calculations
   const totalRegistered = members.length;
@@ -145,7 +158,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Manifest Fellowship Dashboard
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
-              Real-time simultaneous data entry by multiple parties (<strong>Anibal</strong>, <strong>Marcus</strong>, <strong>Ahebwa</strong>, <strong>Grace</strong>, <strong>David</strong>, <strong>Sarah</strong>), supporting online live sync, offline queues, 7-day auto-updates, and full deletion rights.
+              Real-time collaborative data entry with custom operators, supporting online live sync, offline queues, 7-day auto-updates, and full deletion rights.
             </p>
           </div>
 
@@ -158,13 +171,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>Register Member</span>
             </button>
             
-            <button
-              onClick={simulateConcurrentEntryDemo}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-orange-500/20 transition-all active:scale-95 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 stroke-[2.5]" />
-              <span>Test 6-Party Entry</span>
-            </button>
+            {/* Install on Phone App CTA */}
+            <PWAInstallButton />
 
             <button
               onClick={() => setActiveTab('members')}
@@ -176,6 +184,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* DEDICATED PHONE DESKTOP APP INSTALL BANNER */}
+      <PWAInstallButton variant="banner" />
 
       {/* EMPTY & READY FOR PRODUCTION USE HERO CARD (Displayed when 0 members) */}
       {totalRegistered === 0 && (
@@ -193,7 +204,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                  The model has been emptied of test records. Your team of 6+ parties (<strong>Anibal</strong>, <strong>Marcus</strong>, <strong>Ahebwa</strong>, <strong>Grace</strong>, <strong>David</strong>, <strong>Sarah</strong>, <strong>Emmanuel</strong>) can now enter real fellowship data simultaneously online or in the field offline.
+                  The model has been emptied of test records. Your team and custom operators can now enter real fellowship data simultaneously online or in the field offline.
                 </p>
               </div>
             </div>
@@ -207,13 +218,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>Register First Member</span>
               </button>
 
-              <button
-                onClick={simulateConcurrentEntryDemo}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-orange-300 font-bold text-xs border border-orange-500/40 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-orange-400" />
-                <span>Simulate 6-Party Entry</span>
-              </button>
+              <PWAInstallButton variant="pill" />
 
               <button
                 onClick={loadDemoData}
@@ -352,18 +357,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       </div>
 
-      {/* MULTI-PARTY COLLABORATIVE DATA ENTRY DECK */}
+      {/* OPERATOR & DATA ENTRY SETUP (BARE & CUSTOM ONLY) */}
       <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-                Multi-Party Collaborative Data Entry Hub (6+ Parties Concurrency)
+                Operator Setup & Data Entry Identity
               </h2>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+                Bare Setup
+              </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Simultaneous input by different operators. Changes made by Anibal, Marcus, Ahebwa, etc. reflect live in real-time across tabs and devices.
+              Clean and bare model with your custom operator name. Extra parties removed. You can add more operators whenever you choose.
             </p>
           </div>
 
@@ -372,7 +380,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {isOnline ? (
                 <>
                   <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-300 font-bold">Online Live Sync</span>
+                  <span className="text-emerald-300 font-bold">Live Sync</span>
                 </>
               ) : (
                 <>
@@ -381,44 +389,222 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </>
               )}
             </div>
+
+            <button
+              onClick={() => setShowAddOperatorModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-orange-300 font-bold text-xs border border-orange-500/40 transition-colors cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-orange-400" />
+              <span>+ Add Operator Myself</span>
+            </button>
           </div>
         </div>
 
-        {/* 6+ Party Operator Badges Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-          {operators.map((op) => {
-            const count = members.filter((m) => m.createdBy?.toLowerCase() === op.name.toLowerCase()).length;
-            const isCurrent = op.name.toLowerCase() === currentUserName.toLowerCase();
+        {/* Active Custom Operator Card & Operators Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Main Active Custom Operator Card */}
+          <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/40 shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider font-extrabold text-orange-400">
+                Active Custom Operator
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-bold">
+                {members.filter((m) => m.createdBy?.toLowerCase() === currentUserName.toLowerCase()).length} records entered
+              </span>
+            </div>
 
-            return (
-              <div
-                key={op.id}
-                onClick={() => setActiveOperatorName(op.name)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                  isCurrent
-                    ? 'bg-orange-500/15 border-orange-500/50 shadow-md shadow-orange-500/10'
-                    : 'bg-slate-850/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700'
-                }`}
-                title={`Click to switch entering data as ${op.name}`}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className={`w-3 h-3 rounded-full ${op.avatarColor} ring-1 ring-white/20`} />
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 font-bold">
-                    {count} records
-                  </span>
-                </div>
-                <div className="font-extrabold text-white text-xs truncate">{op.name}</div>
-                <div className="text-[10px] text-slate-400 truncate mt-0.5">{op.deskName}</div>
-                {isCurrent && (
-                  <div className="mt-1.5 text-[9px] font-bold text-orange-400 flex items-center gap-1">
-                    <span>Active Now</span>
-                  </div>
-                )}
+            {isEditingOperatorName ? (
+              <div className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="text"
+                  value={operatorNameInput}
+                  onChange={(e) => setOperatorNameInput(e.target.value)}
+                  placeholder="Custom operator name"
+                  className="flex-1 bg-slate-950 border border-orange-500 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && operatorNameInput.trim()) {
+                      setCustomOperatorName(operatorNameInput.trim());
+                      setIsEditingOperatorName(false);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (operatorNameInput.trim()) {
+                      setCustomOperatorName(operatorNameInput.trim());
+                    }
+                    setIsEditingOperatorName(false);
+                  }}
+                  className="p-1 rounded bg-orange-600 hover:bg-orange-500 text-slate-950"
+                  title="Save Name"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </button>
+                <button
+                  onClick={() => setIsEditingOperatorName(false)}
+                  className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white"
+                  title="Cancel"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-            );
-          })}
+            ) : (
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
+                    {currentUserName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-white text-sm flex items-center gap-1.5">
+                      <span>{currentUserName}</span>
+                      <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
+                        Current
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">Desk Officer / Intake</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setOperatorNameInput(currentUserName);
+                    setIsEditingOperatorName(true);
+                  }}
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-orange-300 px-2 py-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+                  title="Change custom operator name"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Rename</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* User Added Operators (if any) */}
+          {operators
+            .filter((op) => op.name.toLowerCase() !== currentUserName.toLowerCase())
+            .map((op) => {
+              const count = members.filter((m) => m.createdBy?.toLowerCase() === op.name.toLowerCase()).length;
+              return (
+                <div
+                  key={op.id}
+                  className="p-4 rounded-xl bg-slate-850 border border-slate-800 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-xl ${op.avatarColor} text-slate-950 font-black flex items-center justify-center text-sm`}>
+                      {op.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-xs">{op.name}</div>
+                      <div className="text-[10px] text-slate-400">{op.deskName} • {count} records</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setActiveOperatorName(op.name)}
+                      className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-orange-300 font-semibold"
+                    >
+                      Switch
+                    </button>
+                    <button
+                      onClick={() => deleteOperator(op.id)}
+                      className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                      title="Remove Operator"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+          {/* Bare Notice Card */}
+          {operators.length <= 1 && (
+            <div className="p-4 rounded-xl bg-slate-850/60 border border-dashed border-slate-800 flex flex-col justify-center items-start text-xs text-slate-400 space-y-1">
+              <div className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Bare Operator Model</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Active parties have been emptied. New operators can be added manually whenever you need them.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Add Custom Operator Modal */}
+      {showAddOperatorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-orange-400" />
+                <span>Add Custom Operator</span>
+              </h3>
+              <button
+                onClick={() => setShowAddOperatorModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newOpName.trim()) return;
+                addCustomOperator(newOpName.trim(), 'Desk Officer', newOpDesk.trim() || 'Registration Desk');
+                setNewOpName('');
+                setNewOpDesk('');
+                setShowAddOperatorModal(false);
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="text-slate-300 font-bold block mb-1">Operator Name</label>
+                <input
+                  type="text"
+                  value={newOpName}
+                  onChange={(e) => setNewOpName(e.target.value)}
+                  placeholder="e.g. Samuel"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-bold block mb-1">Role or Desk</label>
+                <input
+                  type="text"
+                  value={newOpDesk}
+                  onChange={(e) => setNewOpDesk(e.target.value)}
+                  placeholder="e.g. North Hall Intake"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddOperatorModal(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold shadow-md shadow-orange-500/20"
+                >
+                  Add Operator
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Main Metric Cards: Total + 3 Portfolios */}
       <div>

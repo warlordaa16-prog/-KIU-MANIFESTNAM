@@ -2,6 +2,7 @@ import React from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import { ManifestLogo } from './ManifestLogo';
 import { exportMembersToCsv } from '../../utils/exportUtils';
+import { PWAInstallButton } from './PWAInstallButton';
 import {
   Search,
   Shield,
@@ -86,6 +87,9 @@ export const Header: React.FC<HeaderProps> = ({
               <div className={`w-2.5 h-2.5 rounded-full ${activeOperator?.avatarColor || 'bg-emerald-500'} ring-1 ring-white/20`} />
               <span className="text-emerald-300 font-extrabold">{currentUserName}</span>
             </div>
+
+            {/* Install on Phone App Header CTA */}
+            <PWAInstallButton variant="pill" className="hidden lg:flex" />
 
             {/* Model Admin Single Role Indicator */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-xs font-bold text-orange-300 shadow-sm">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 import {
   Users,
   Wifi,
@@ -19,6 +20,11 @@ import {
   AlertTriangle,
   RotateCcw,
   ShieldCheck,
+  Edit3,
+  UserPlus,
+  Check,
+  X,
+  Smartphone,
 } from 'lucide-react';
 
 export const MultiPartyBar: React.FC = () => {
@@ -27,7 +33,9 @@ export const MultiPartyBar: React.FC = () => {
     activeOperator,
     operators,
     setActiveOperatorName,
+    setCustomOperatorName,
     addCustomOperator,
+    deleteOperator,
     isOnline,
     isSimulatedOffline,
     toggleSimulatedOffline,
@@ -44,6 +52,8 @@ export const MultiPartyBar: React.FC = () => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showAddCustom, setShowAddCustom] = useState(false);
+  const [isEditingCurrentName, setIsEditingCurrentName] = useState(false);
+  const [editedNameInput, setEditedNameInput] = useState('');
   const [customName, setCustomName] = useState('');
   const [customDesk, setCustomDesk] = useState('');
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -94,145 +104,191 @@ export const MultiPartyBar: React.FC = () => {
     <div className="w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/90 text-white z-20 py-2.5 px-4 sm:px-6 lg:px-8 transition-all">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
         
-        {/* Left Side: Active Operator & Multi-Party Switcher */}
+        {/* Left Side: Bare Custom Operator Setup */}
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1.5 text-slate-400 font-semibold tracking-wide uppercase text-[10px]">
             <Users className="w-3.5 h-3.5 text-orange-400" />
-            <span>Active Party:</span>
+            <span>Custom Operator:</span>
           </div>
 
-          {/* Current Operator Dropdown Badge */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-700/80 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              <div className={`w-3.5 h-3.5 rounded-full ${activeOperator.avatarColor} ring-2 ring-white/20`} />
-              <span className="text-emerald-300 font-bold">{currentUserName}</span>
-              <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">
-                ({activeOperator.deskName})
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 mb-1 border-b border-slate-800 flex items-center justify-between">
-                  <span>Switch Entering Party</span>
-                  <span className="text-orange-400 font-normal">Multi-Party Ready</span>
-                </div>
-
-                <div className="max-h-60 overflow-y-auto space-y-1 py-1">
-                  {operators.map((op) => {
-                    const isCurrent = op.name.toLowerCase() === currentUserName.toLowerCase();
-                    return (
-                      <div
-                        key={op.id}
-                        className={`flex items-center justify-between p-2 rounded-xl transition-all cursor-pointer ${
-                          isCurrent
-                            ? 'bg-orange-500/20 border border-orange-500/40 text-orange-200'
-                            : 'hover:bg-slate-800 text-slate-200'
-                        }`}
-                        onClick={() => {
-                          setActiveOperatorName(op.name);
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-3.5 h-3.5 rounded-full ${op.avatarColor} shrink-0 ring-1 ring-white/20`} />
-                          <div className="text-left">
-                            <div className="font-bold flex items-center gap-1.5">
-                              <span>{op.name}</span>
-                              {isCurrent && (
-                                <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/30 text-orange-300">
-                                  Current
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-slate-400">{op.deskName}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            title={`Open separate tab as ${op.name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openNewTabAs(op.name);
-                            }}
-                            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                          {isCurrent && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Add Custom Operator Button */}
-                <div className="pt-2 border-t border-slate-800 mt-1">
-                  {!showAddCustom ? (
-                    <button
-                      onClick={() => setShowAddCustom(true)}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5 text-orange-400" />
-                      <span>+ Custom Operator Name</span>
-                    </button>
-                  ) : (
-                    <form onSubmit={handleAddCustom} className="space-y-1.5 p-1">
-                      <input
-                        type="text"
-                        value={customName}
-                        onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="Operator Name (e.g. Joshua)"
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
-                        autoFocus
-                      />
-                      <input
-                        type="text"
-                        value={customDesk}
-                        onChange={(e) => setCustomDesk(e.target.value)}
-                        placeholder="Desk/Role (e.g. Annex Entry)"
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
-                      />
-                      <div className="flex items-center gap-1.5 pt-1">
-                        <button
-                          type="submit"
-                          className="flex-1 py-1 rounded bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold text-[11px]"
-                        >
-                          Add & Switch
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddCustom(false)}
-                          className="py-1 px-2 rounded bg-slate-800 text-slate-400 hover:text-white text-[11px]"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
+          {/* Inline Edit or Display of Custom Operator Name */}
+          {isEditingCurrentName ? (
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-orange-500/80 rounded-xl px-2 py-1 shadow-inner">
+              <input
+                type="text"
+                value={editedNameInput}
+                onChange={(e) => setEditedNameInput(e.target.value)}
+                placeholder="Enter custom operator name"
+                className="bg-transparent text-xs text-white placeholder-slate-500 font-bold focus:outline-none w-36"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editedNameInput.trim()) {
+                    setCustomOperatorName(editedNameInput.trim());
+                    setIsEditingCurrentName(false);
+                  } else if (e.key === 'Escape') {
+                    setIsEditingCurrentName(false);
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (editedNameInput.trim()) {
+                    setCustomOperatorName(editedNameInput.trim());
+                  }
+                  setIsEditingCurrentName(false);
+                }}
+                className="p-1 rounded bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold"
+                title="Save Name"
+              >
+                <Check className="w-3 h-3 stroke-[3]" />
+              </button>
+              <button
+                onClick={() => setIsEditingCurrentName(false)}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+                title="Cancel"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-1.5 shadow-sm">
+                <div className={`w-3.5 h-3.5 rounded-full ${activeOperator.avatarColor} ring-2 ring-white/20`} />
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-1.5 text-emerald-300 font-extrabold hover:text-emerald-200 transition-colors cursor-pointer text-xs"
+                  title="Switch or add custom operators"
+                >
+                  <span>{currentUserName}</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditedNameInput(currentUserName);
+                    setIsEditingCurrentName(true);
+                  }}
+                  className="p-1 rounded-md text-slate-400 hover:text-orange-400 hover:bg-slate-800 transition-colors ml-1"
+                  title="Edit custom operator name"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
               </div>
-            )}
-          </div>
 
-          {/* Quick Tab Switcher: open secondary browser tab */}
-          <button
-            onClick={() => {
-              const other = currentUserName === 'Anibal' ? 'Marcus' : currentUserName === 'Marcus' ? 'Ahebwa' : 'Anibal';
-              openNewTabAs(other);
-            }}
-            title="Open a parallel tab as another operator to test simultaneous multi-party entry side-by-side"
-            className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 hover:text-orange-300 px-2 py-1 rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer"
-          >
-            <ExternalLink className="w-3 h-3 text-orange-400" />
-            <span>Open Side-by-Side Tab</span>
-          </button>
+              {/* Operator Management Dropdown (Bare & Clean) */}
+              {isDropdownOpen && (
+                <div className="absolute left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 mb-1 border-b border-slate-800 flex items-center justify-between">
+                    <span>Custom Operators</span>
+                    <span className="text-emerald-400 font-normal">Bare Setup</span>
+                  </div>
+
+                  {operators.length === 0 ? (
+                    <div className="py-3 px-2 text-center text-[11px] text-slate-400">
+                      Bare model with custom operator: <strong className="text-emerald-300">{currentUserName}</strong>.
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        No extra parties. You can add more operators below whenever you wish.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="max-h-52 overflow-y-auto space-y-1 py-1">
+                      {operators.map((op) => {
+                        const isCurrent = op.name.toLowerCase() === currentUserName.toLowerCase();
+                        return (
+                          <div
+                            key={op.id}
+                            className={`flex items-center justify-between p-2 rounded-xl transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-orange-500/20 border border-orange-500/40 text-orange-200'
+                                : 'hover:bg-slate-800 text-slate-200'
+                            }`}
+                            onClick={() => {
+                              setActiveOperatorName(op.name);
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${op.avatarColor} shrink-0 ring-1 ring-white/20`} />
+                              <div className="text-left">
+                                <div className="font-bold flex items-center gap-1.5 text-xs">
+                                  <span>{op.name}</span>
+                                  {isCurrent && (
+                                    <span className="text-[9px] px-1 py-0.2 rounded bg-orange-500/30 text-orange-300">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400">{op.deskName}</div>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteOperator(op.id);
+                              }}
+                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-700 transition-colors"
+                              title={`Delete operator ${op.name}`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Add Custom Operator Form */}
+                  <div className="pt-2 border-t border-slate-800 mt-1">
+                    {!showAddCustom ? (
+                      <button
+                        onClick={() => setShowAddCustom(true)}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-semibold"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 text-orange-400" />
+                        <span>+ Add Operator Myself</span>
+                      </button>
+                    ) : (
+                      <form onSubmit={handleAddCustom} className="space-y-1.5 p-1">
+                        <input
+                          type="text"
+                          value={customName}
+                          onChange={(e) => setCustomName(e.target.value)}
+                          placeholder="Operator Name (e.g. Samuel)"
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={customDesk}
+                          onChange={(e) => setCustomDesk(e.target.value)}
+                          placeholder="Desk/Role (e.g. Desk 1)"
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                        />
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <button
+                            type="submit"
+                            className="flex-1 py-1 rounded bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold text-[11px]"
+                          >
+                            Add Operator
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddCustom(false)}
+                            className="py-1 px-2 rounded bg-slate-800 text-slate-400 hover:text-white text-[11px]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Direct Install on Phone Button */}
+          <PWAInstallButton variant="pill" />
         </div>
 
         {/* Center: Online/Offline Network Status & Sync Queue */}

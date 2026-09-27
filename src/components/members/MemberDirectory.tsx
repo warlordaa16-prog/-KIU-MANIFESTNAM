@@ -128,7 +128,12 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   };
 
   const residences = ['Nana Hostel', 'Olympia Hostel', 'Akamwesi Hostel', 'Ideal Hostel', 'Douglas Villa', 'Prestige Hostel', 'Kansanga Central', 'Bunga Residence'];
-  const knownOperators = ['Anibal', 'Marcus', 'Ahebwa', 'Grace', 'David', 'Sarah', 'Emmanuel'];
+  const knownOperators = Array.from(
+    new Set([
+      ...(operators.map((o) => o.name)),
+      ...(members.map((m) => m.createdBy).filter(Boolean) as string[]),
+    ])
+  );
 
   // Selection toggle
   const toggleSelectMember = (id: string) => {
@@ -385,46 +390,48 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
 
         </div>
 
-        {/* Quick Filter Tags with real counts */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
-          <span className="text-slate-500 font-medium mr-1">Collaborative Parties:</span>
-          
-          <button
-            onClick={() => {
-              setOperatorFilter('All');
-              setStatusFilter('All');
-              setPortfolioFilter('All');
-              setResidenceFilter('All');
-              setSearchQuery('');
-            }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
-              operatorFilter === 'All' && statusFilter === 'All' && portfolioFilter === 'All'
-                ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            All Parties ({members.length})
-          </button>
+        {/* Quick Filter Tags with real counts (if operators exist) */}
+        {knownOperators.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
+            <span className="text-slate-500 font-medium mr-1">Entry Operators:</span>
+            
+            <button
+              onClick={() => {
+                setOperatorFilter('All');
+                setStatusFilter('All');
+                setPortfolioFilter('All');
+                setResidenceFilter('All');
+                setSearchQuery('');
+              }}
+              className={`px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+                operatorFilter === 'All' && statusFilter === 'All' && portfolioFilter === 'All'
+                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              All Operators ({members.length})
+            </button>
 
-          {knownOperators.map((op) => {
-            const count = members.filter((m) => m.createdBy?.toLowerCase() === op.toLowerCase()).length;
-            const isSelected = operatorFilter.toLowerCase() === op.toLowerCase();
-            return (
-              <button
-                key={op}
-                onClick={() => setOperatorFilter(isSelected ? 'All' : op)}
-                className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  isSelected
-                    ? 'bg-orange-500 text-slate-950 font-bold shadow-sm'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-750 border border-slate-700/60'
-                }`}
-              >
-                <div className={`w-2 h-2 rounded-full ${getOperatorColor(op)}`} />
-                <span>{op} ({count})</span>
-              </button>
-            );
-          })}
-        </div>
+            {knownOperators.map((op) => {
+              const count = members.filter((m) => m.createdBy?.toLowerCase() === op.toLowerCase()).length;
+              const isSelected = operatorFilter.toLowerCase() === op.toLowerCase();
+              return (
+                <button
+                  key={op}
+                  onClick={() => setOperatorFilter(isSelected ? 'All' : op)}
+                  className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    isSelected
+                      ? 'bg-orange-500 text-slate-950 font-bold shadow-sm'
+                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-750 border border-slate-700/60'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${getOperatorColor(op)}`} />
+                  <span>{op} ({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* STICKY BATCH SELECTION & ACTION BAR */}

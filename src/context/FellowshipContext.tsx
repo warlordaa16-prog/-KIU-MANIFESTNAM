@@ -51,7 +51,10 @@ interface FellowshipContextType {
   operators: CollaborativeOperator[];
   activeOperator: CollaborativeOperator;
   setActiveOperatorName: (name: string) => void;
+  setCustomOperatorName: (name: string) => void;
   addCustomOperator: (name: string, roleTitle?: string, deskName?: string) => void;
+  deleteOperator: (id: string) => void;
+  emptyOperators: () => void;
 
   // Real-Time & Offline Collaboration
   isOnline: boolean;
@@ -186,38 +189,49 @@ const makeUniqueId = (prefix: string): string => {
 };
 
 export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Read URL query parameter for active operator (e.g. ?operator=Marcus or ?operator=Anibal)
+  // Read URL query parameter for active operator or saved custom operator
   const initialOperatorName = (() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlOp = params.get('operator');
-      if (urlOp) return urlOp;
+      if (urlOp && urlOp.trim()) return urlOp.trim();
       const saved = localStorage.getItem(`${STORAGE_PREFIX}active_operator`);
-      if (saved) return saved;
+      if (saved && !['Anibal', 'Marcus', 'Ahebwa', 'Grace', 'David', 'Sarah', 'Emmanuel'].includes(saved)) {
+        return saved;
+      }
     }
-    return 'Anibal';
+    return 'Custom Operator';
   })();
 
   const [currentUserName, setCurrentUserNameState] = useState<string>(initialOperatorName);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('Model Admin');
 
-  // Operators list
+  // Operators list - bare and empty by default as requested. Users can add operators themselves.
   const [operators, setOperators] = useState<CollaborativeOperator[]>(() => {
+    if (typeof window === 'undefined') return [];
     const saved = localStorage.getItem(`${STORAGE_PREFIX}operators`);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Filter out any previous dummy/mock party entries so it stays bare
+          const customOnly = parsed.filter(
+            (o) => !['op-anibal', 'op-marcus', 'op-ahebwa', 'op-grace', 'op-david', 'op-sarah', 'op-emmanuel'].includes(o.id) &&
+                   !['anibal', 'marcus', 'ahebwa', 'grace', 'david', 'sarah', 'emmanuel'].includes((o.name || '').toLowerCase())
+          );
+          return customOnly;
+        }
       } catch {}
     }
-    return INITIAL_OPERATORS;
+    return [];
   });
 
   const activeOperator: CollaborativeOperator = operators.find(
     (o) => o.name.toLowerCase() === currentUserName.toLowerCase()
   ) || {
-    id: `op-${currentUserName.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+    id: `op-custom-${currentUserName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'op'}`,
     name: currentUserName,
-    roleTitle: 'Data Entry Operator',
+    roleTitle: 'Custom Operator',
     avatarColor: 'bg-emerald-500',
     badgeBg: 'bg-emerald-500/10',
     badgeBorder: 'border-emerald-500/40',
@@ -227,13 +241,39 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const setActiveOperatorName = (name: string) => {
-    setCurrentUserNameState(name);
-    localStorage.setItem(`${STORAGE_PREFIX}active_operator`, name);
-    showToast(`Switched active operator to ${name}`, 'info', name);
+    const clean = name.trim();
+    if (!clean) return;
+    setCurrentUserNameState(clean);
+    localStorage.setItem(`${STORAGE_PREFIX}active_operator`, clean);
+    showToast(`Active operator set to ${clean}`, 'info', clean);
     // Notify server of operator switch
     sendWsMessage({
       type: 'client:identify',
-      userName: name,
+      userName: clean,
+      role: currentUserRole,
+      activeTab,
+    });
+  };
+
+  const setCustomOperatorName = (name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    setCurrentUserNameState(clean);
+    localStorage.setItem(`${STORAGE_PREFIX}active_operator`, clean);
+    // If this operator exists in list, update it
+    setOperators((prev) => {
+      const exists = prev.some((o) => o.name.toLowerCase() === clean.toLowerCase());
+      if (exists) {
+        return prev.map((o) =>
+          o.name.toLowerCase() === clean.toLowerCase() ? { ...o, name: clean } : o
+        );
+      }
+      return prev;
+    });
+    showToast(`Custom operator name updated to ${clean}`, 'success', clean);
+    sendWsMessage({
+      type: 'client:identify',
+      userName: clean,
       role: currentUserRole,
       activeTab,
     });
@@ -242,7 +282,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addCustomOperator = (name: string, roleTitle = 'Desk Officer', deskName = 'Registration Desk') => {
     const cleanName = name.trim();
     if (!cleanName) return;
-    const colors = ['bg-purple-500', 'bg-teal-500', 'bg-pink-500', 'bg-indigo-500', 'bg-lime-500'];
+    const colors = ['bg-purple-500', 'bg-teal-500', 'bg-pink-500', 'bg-indigo-500', 'bg-amber-500', 'bg-emerald-500'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     const newOp: CollaborativeOperator = {
       id: `op-${Date.now().toString(36)}`,
@@ -256,10 +296,28 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       isOnline: true,
       entriesCount: 0,
     };
-    const updated = [...operators, newOp];
+    const updated = [...operators.filter((o) => o.name.toLowerCase() !== cleanName.toLowerCase()), newOp];
     setOperators(updated);
     localStorage.setItem(`${STORAGE_PREFIX}operators`, JSON.stringify(updated));
     setActiveOperatorName(cleanName);
+  };
+
+  const deleteOperator = (id: string) => {
+    const updated = operators.filter((o) => o.id !== id && o.name !== id);
+    setOperators(updated);
+    localStorage.setItem(`${STORAGE_PREFIX}operators`, JSON.stringify(updated));
+    if (operators.find((o) => o.id === id || o.name === id)?.name.toLowerCase() === currentUserName.toLowerCase()) {
+      const fallback = updated.length > 0 ? updated[0].name : 'Custom Operator';
+      setCurrentUserNameState(fallback);
+      localStorage.setItem(`${STORAGE_PREFIX}active_operator`, fallback);
+    }
+    showToast('Operator removed', 'info');
+  };
+
+  const emptyOperators = () => {
+    setOperators([]);
+    localStorage.setItem(`${STORAGE_PREFIX}operators`, JSON.stringify([]));
+    showToast('Active party list emptied and bare', 'info');
   };
 
   // 7-Day Auto-Update Engine State
@@ -1857,6 +1915,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify([]));
     localStorage.setItem(`${STORAGE_PREFIX}events`, JSON.stringify([]));
     localStorage.setItem(`${STORAGE_PREFIX}offline_queue`, JSON.stringify([]));
+    setOperators([]);
+    localStorage.setItem(`${STORAGE_PREFIX}operators`, JSON.stringify([]));
 
     if (isOnline && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       sendWsMessage({ type: 'state:empty', operator: currentUserName });
@@ -1949,7 +2009,10 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     operators,
     activeOperator,
     setActiveOperatorName,
+    setCustomOperatorName,
     addCustomOperator,
+    deleteOperator,
+    emptyOperators,
 
     isOnline,
     isSimulatedOffline,

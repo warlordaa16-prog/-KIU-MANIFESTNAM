@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
+import { PWAInstallButton } from './PWAInstallButton';
 import {
   LayoutDashboard,
   Users,
@@ -119,6 +120,11 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* Right: Quick Mobile App Install Pill */}
+        <div className="shrink-0 hidden sm:block">
+          <PWAInstallButton variant="pill" />
         </div>
 
       </div>

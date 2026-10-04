@@ -56,6 +56,11 @@ interface FellowshipContextType {
   deleteOperator: (id: string) => void;
   emptyOperators: () => void;
 
+  // Admin Portal Security Gate
+  isAdminAuthenticated: boolean;
+  adminLogin: (password: string) => boolean;
+  adminLogout: () => void;
+
   // Real-Time & Offline Collaboration
   isOnline: boolean;
   isSimulatedOffline: boolean;
@@ -205,6 +210,35 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [currentUserName, setCurrentUserNameState] = useState<string>(initialOperatorName);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('Model Admin');
+
+  // Admin Authentication State (Password protected: 'registration')
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(`${STORAGE_PREFIX}admin_authenticated`) === 'true';
+    }
+    return false;
+  });
+
+  const adminLogin = (password: string): boolean => {
+    if (password.trim() === 'registration') {
+      setIsAdminAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`${STORAGE_PREFIX}admin_authenticated`, 'true');
+      }
+      showToast('Admin Portal access granted', 'success', 'Admin');
+      return true;
+    }
+    showToast('Incorrect password. Access denied.', 'error');
+    return false;
+  };
+
+  const adminLogout = () => {
+    setIsAdminAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(`${STORAGE_PREFIX}admin_authenticated`);
+    }
+    showToast('Admin logged out', 'info');
+  };
 
   // Operators list - bare and empty by default as requested. Users can add operators themselves.
   const [operators, setOperators] = useState<CollaborativeOperator[]>(() => {
@@ -1004,20 +1038,28 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return `UGX ${Number(amount || 0).toLocaleString('en-US')}`;
   };
 
-  // ID Generators
+  // ID Generators: Sequential PINs formatted as sent 1, sent 2, sent 3, ... until registration is done
   const generateMemberId = (): string => {
-    const currentYear = new Date().getFullYear();
     let maxNum = 0;
+    const wordsMap: Record<string, number> = {
+      one: 1, two: 2, three: 3, four: 4, five: 5,
+      six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    };
     members.forEach((m) => {
-      const match = m.id.match(/^MAN-\d{4}-(\d+)$/);
+      const match = m.id.match(/^(?:sent[-\s]?|MAN-\d{4}-)(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxNum) maxNum = num;
+      } else {
+        const wordMatch = m.id.match(/^sent\s+([a-z]+)$/i);
+        if (wordMatch && wordsMap[wordMatch[1].toLowerCase()]) {
+          const num = wordsMap[wordMatch[1].toLowerCase()];
+          if (num > maxNum) maxNum = num;
+        }
       }
     });
     const nextNum = Math.max(members.length + 1, maxNum + 1);
-    const padded = String(nextNum).padStart(6, '0');
-    return `MAN-${currentYear}-${padded}`;
+    return `sent ${nextNum}`;
   };
 
   // Add Member
@@ -1806,7 +1848,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const entry = demoEntries[i];
       await new Promise((resolve) => setTimeout(resolve, 350));
 
-      const memberId = `MAN-${new Date().getFullYear()}-${String(members.length + i + 10).padStart(6, '0')}`;
+      const memberId = `sent ${members.length + i + 1}`;
       const nowIso = new Date().toISOString();
 
       const newM: Member = {
@@ -2013,6 +2055,10 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     addCustomOperator,
     deleteOperator,
     emptyOperators,
+
+    isAdminAuthenticated,
+    adminLogin,
+    adminLogout,
 
     isOnline,
     isSimulatedOffline,

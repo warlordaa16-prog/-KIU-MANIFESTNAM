@@ -320,7 +320,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
                   <div className="sm:col-span-2 pt-1.5 border-t border-amber-500/20 flex items-center justify-between">
                     <span className="text-amber-200/80 text-[10px] font-semibold flex items-center gap-1">
-                      <GraduationCap className="w-3 h-3 text-amber-400" /> Academic Portfolio (PIN Field):
+                      <GraduationCap className="w-3 h-3 text-amber-400" /> Academic Portfolio:
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                       (member.portfolio || portfolio) === 'Schools'

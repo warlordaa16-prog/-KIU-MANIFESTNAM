@@ -51,6 +51,7 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
     emptyModelForUse,
     loadDemoData,
     simulateConcurrentEntryDemo,
+    isAdminAuthenticated,
   } = useFellowship();
 
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -219,40 +220,34 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
             Members & Portfolios Directory
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Complete database of {members.length} members across Schools, Alumni, and Community portfolios with multi-party entry & deletion access
+            Database of {members.length} members across Schools, Alumni, and Community portfolios
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {members.length > 0 && (
-            <button
-              onClick={() => setShowEmptyConfirm(true)}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Empty model to make ready for live data entry"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>Empty Model</span>
-            </button>
-          )}
+          {/* Admin Exclusive Actions */}
+          {isAdminAuthenticated && (
+            <>
+              {members.length > 0 && (
+                <button
+                  onClick={() => setShowEmptyConfirm(true)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Empty model to make ready for live data entry"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Empty Model</span>
+                </button>
+              )}
 
-          {members.length === 0 && (
-            <button
-              onClick={loadDemoData}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Load 18 sample members"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Load Demo Data</span>
-            </button>
+              <button
+                onClick={exportMembersCsv}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Download CSV</span>
+              </button>
+            </>
           )}
-
-          <button
-            onClick={exportMembersCsv}
-            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Download CSV</span>
-          </button>
 
           <button
             onClick={onOpenRegister}
@@ -264,48 +259,50 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
         </div>
       </div>
 
-      {/* 7-DAY AUTO-UPDATE ENGINE CONTROL CARD */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-white text-sm">7-Day Lifecycle Auto-Update Engine</span>
-              <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Active
-              </span>
+      {/* 7-DAY AUTO-UPDATE ENGINE CONTROL CARD (Admin Only) */}
+      {isAdminAuthenticated && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
             </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              Automatically transitions First Timers to <strong>Returning Visitors</strong> after 7 days and links unassigned hostel members to families.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-white text-sm">7-Day Lifecycle Auto-Update Engine</span>
+                <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Active
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Automatically transitions First Timers to <strong>Returning Visitors</strong> after 7 days and links unassigned hostel members to families.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleTriggerAutoUpdate}
+              disabled={isAutoUpdating}
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Scan all members and run 7-day update"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>{isAutoUpdating ? 'Processing...' : '⚡ Run 7-Day Auto Update'}</span>
+            </button>
+
+            <button
+              onClick={handleSimulate7DaysPassing}
+              disabled={isAutoUpdating}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-amber-300 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Fast-forward records by 7 days to simulate and observe the automatic transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+              <span>⏩ Simulate 7 Days (+7 Days Test)</span>
+            </button>
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleTriggerAutoUpdate}
-            disabled={isAutoUpdating}
-            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-            title="Scan all members and run 7-day update"
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>{isAutoUpdating ? 'Processing...' : '⚡ Run 7-Day Auto Update'}</span>
-          </button>
-
-          <button
-            onClick={handleSimulate7DaysPassing}
-            disabled={isAutoUpdating}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-amber-300 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-            title="Fast-forward records by 7 days to simulate and observe the automatic transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-            <span>⏩ Simulate 7 Days (+7 Days Test)</span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3.5 shadow-md">

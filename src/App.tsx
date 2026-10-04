@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { FellowshipProvider, useFellowship } from './context/FellowshipContext';
 import { Header } from './components/common/Header';
-import { MultiPartyBar } from './components/collaboration/MultiPartyBar';
 import { BottomTaskbar } from './components/common/BottomTaskbar';
 import { WatermarkBackground } from './components/common/WatermarkBackground';
 import { ToastContainer } from './components/common/ToastContainer';
+import { OneTimePhoneInstallPrompt } from './components/common/OneTimePhoneInstallPrompt';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { MemberDirectory } from './components/members/MemberDirectory';
 import { MemberRegistrationModal } from './components/members/MemberRegistrationModal';
 import { MemberProfileModal } from './components/members/MemberProfileModal';
 import { MemberIdCardModal } from './components/members/MemberIdCardModal';
 import { FellowshipGroupsManager } from './components/groups/FellowshipGroupsManager';
-import { ReportsManager } from './components/reports/ReportsManager';
+import { AdminPortal } from './components/admin/AdminPortal';
 import { THEME_PRESETS } from './themeConstants';
 import { Member } from './types';
 
@@ -20,7 +20,6 @@ const MainAppContent: React.FC = () => {
     activeTab,
     setActiveTab,
     members,
-    currentUserName,
     currentTheme,
     watermarkOpacity,
     isWatermarkGlow,
@@ -64,8 +63,8 @@ const MainAppContent: React.FC = () => {
         onOpenRegister={() => setIsRegisterOpen(true)}
       />
 
-      {/* Multi-Party Collaborative Bar */}
-      <MultiPartyBar />
+      {/* One-time phone desktop install prompt: appears only once when someone opens the link */}
+      <OneTimePhoneInstallPrompt />
 
       {/* Main Dynamic View (Full width without side bar) */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative z-10">
@@ -87,7 +86,7 @@ const MainAppContent: React.FC = () => {
 
           {activeTab === 'groups' && <FellowshipGroupsManager />}
 
-          {(activeTab === 'reports' || activeTab === 'admin') && <ReportsManager />}
+          {(activeTab === 'reports' || activeTab === 'admin') && <AdminPortal />}
         </div>
       </main>
 

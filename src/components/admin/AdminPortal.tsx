@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import {
-  Shield,
   ShieldCheck,
   Lock,
   Unlock,
@@ -12,25 +11,23 @@ import {
   FileSpreadsheet,
   Download,
   Search,
-  CheckCircle2,
   Trash2,
-  Filter,
-  CheckSquare,
-  Square,
   AlertCircle,
-  Clock,
-  Sparkles,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Database,
+  Sparkles,
 } from 'lucide-react';
 import { exportMembersToCsv } from '../../utils/exportUtils';
-import { Member, MemberPortfolio } from '../../types';
 import { matchesPinSearch } from '../../utils/pinUtils';
 
 export const AdminPortal: React.FC = () => {
   const {
     members = [],
     homes = [],
-    departments = [],
     deleteMember,
     isAdminAuthenticated,
     adminLogin,
@@ -41,10 +38,15 @@ export const AdminPortal: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Table selection and filter state
+  // Table selection, pagination and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [portfolioFilter, setPortfolioFilter] = useState<'All' | 'Schools' | 'Alumni' | 'Community' | 'First Timers'>('All');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Pagination for high capacity (10,000+ members)
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [jumpPageInput, setJumpPageInput] = useState<string>('1');
 
   // Metrics Calculations
   const totalRegistered = members.length;
@@ -106,6 +108,17 @@ export const AdminPortal: React.FC = () => {
     return matchesSearch && matchesPortfolio;
   });
 
+  // Reset pagination on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+    setJumpPageInput('1');
+  }, [searchQuery, portfolioFilter, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredMembers.length);
+  const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+
   // Toggle selection
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -116,7 +129,22 @@ export const AdminPortal: React.FC = () => {
     });
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAllCurrentPage = () => {
+    const pageIds = paginatedMembers.map((m) => m.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = () => {
     if (selectedIds.size === filteredMembers.length && filteredMembers.length > 0) {
       setSelectedIds(new Set());
     } else {
@@ -124,8 +152,8 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  const isAllSelected =
-    filteredMembers.length > 0 && selectedIds.size === filteredMembers.length;
+  const isPageAllSelected =
+    paginatedMembers.length > 0 && paginatedMembers.every((m) => selectedIds.has(m.id));
 
   // Export Handlers
   const todayStr = new Date().toISOString().split('T')[0];
@@ -134,8 +162,8 @@ export const AdminPortal: React.FC = () => {
     exportMembersToCsv(
       members,
       homes,
-      departments,
-      `manifest_fellowship_full_${todayStr}.csv`
+      [],
+      `manifest_fellowship_full_${todayStr}_(${members.length}_records).csv`
     );
   };
 
@@ -145,7 +173,7 @@ export const AdminPortal: React.FC = () => {
     exportMembersToCsv(
       selectedMembers,
       homes,
-      departments,
+      [],
       `manifest_selected_${selectedMembers.length}_members_${todayStr}.csv`
     );
   };
@@ -160,9 +188,19 @@ export const AdminPortal: React.FC = () => {
     exportMembersToCsv(
       list,
       homes,
-      departments,
-      `manifest_${portfolio.toLowerCase()}_${todayStr}.csv`
+      [],
+      `manifest_${portfolio.toLowerCase()}_${todayStr}_(${list.length}_records).csv`
     );
+  };
+
+  const handleJumpPage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pageNum = parseInt(jumpPageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+    } else {
+      setJumpPageInput(String(currentPage));
+    }
   };
 
   // If NOT authenticated, show the secure password gate
@@ -233,15 +271,18 @@ export const AdminPortal: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       
-      {/* Admin Header with Lock/Logout */}
+      {/* Admin Header with Capacity Indicator */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               Admin Portal Authenticated
             </span>
-            <span className="text-xs text-slate-400">KIU & Makindye Hub</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+              <Database className="w-3 h-3 text-blue-400" />
+              High Capacity: 10,000+ Intake Scalable
+            </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
@@ -249,7 +290,7 @@ export const AdminPortal: React.FC = () => {
             <span>Admin Data Consolidation & Export Portal</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Consolidated registry of all members entered across all intake volunteers and desks. Admin exclusive rights to download collective and selected CSV datasets.
+            Consolidated registry of all members entered across all registration desks. Admin exclusive rights to download collective and selected CSV datasets.
           </p>
         </div>
 
@@ -274,8 +315,8 @@ export const AdminPortal: React.FC = () => {
             <span>Total Registered</span>
             <Users className="w-4 h-4 text-orange-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white mt-1.5">{totalRegistered}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">All active intake entries</div>
+          <div className="text-2xl sm:text-3xl font-black text-white mt-1.5">{totalRegistered.toLocaleString()}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">Capacity scaled to 10,000+</div>
         </div>
 
         {/* School Portfolio */}
@@ -284,7 +325,7 @@ export const AdminPortal: React.FC = () => {
             <span>School Portfolio</span>
             <GraduationCap className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-blue-300 mt-1.5">{schoolsCount}</div>
+          <div className="text-2xl sm:text-3xl font-black text-blue-300 mt-1.5">{schoolsCount.toLocaleString()}</div>
           <div className="text-[10px] text-slate-400 mt-0.5">University students</div>
         </div>
 
@@ -294,8 +335,8 @@ export const AdminPortal: React.FC = () => {
             <span>Alumni Portfolio</span>
             <Building className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-purple-300 mt-1.5">{alumniCount}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Graduates & working alumni</div>
+          <div className="text-2xl sm:text-3xl font-black text-purple-300 mt-1.5">{alumniCount.toLocaleString()}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">Graduates & alumni</div>
         </div>
 
         {/* Community Portfolio */}
@@ -304,8 +345,8 @@ export const AdminPortal: React.FC = () => {
             <span>Community Portfolio</span>
             <Briefcase className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1.5">{communityCount}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Community members</div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1.5">{communityCount.toLocaleString()}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">Residents & professionals</div>
         </div>
 
         {/* First Timers */}
@@ -314,22 +355,22 @@ export const AdminPortal: React.FC = () => {
             <span>First Timers</span>
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-300 mt-1.5">{firstTimersCount}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">New visitors registered</div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-300 mt-1.5">{firstTimersCount.toLocaleString()}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">New attendees</div>
         </div>
 
       </div>
 
-      {/* CSV EXPORT ACTION CENTER (Download Selected & Download Full) */}
+      {/* CSV EXPORT CENTER */}
       <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-              <span>Admin CSV Export Center</span>
+            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-orange-400" />
+              <span>Admin Data Export Center</span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Select individuals from the consolidated table below or download complete portfolios.
+              Select individuals from the consolidated table below or download complete portfolios. High-speed chunked CSV generation supports 10,000+ records.
             </p>
           </div>
 
@@ -357,7 +398,7 @@ export const AdminPortal: React.FC = () => {
               title="Download entire dataset of all registered members"
             >
               <FileSpreadsheet className="w-4 h-4 stroke-[2.5]" />
-              <span>Download Full Fellowship CSV ({members.length})</span>
+              <span>Download Full Fellowship CSV ({members.length.toLocaleString()})</span>
             </button>
           </div>
         </div>
@@ -371,7 +412,7 @@ export const AdminPortal: React.FC = () => {
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-blue-300 font-bold border border-blue-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            <span>Schools CSV ({schoolsCount})</span>
+            <span>Schools CSV ({schoolsCount.toLocaleString()})</span>
           </button>
 
           <button
@@ -379,7 +420,7 @@ export const AdminPortal: React.FC = () => {
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-purple-300 font-bold border border-purple-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Building className="w-3.5 h-3.5" />
-            <span>Alumni CSV ({alumniCount})</span>
+            <span>Alumni CSV ({alumniCount.toLocaleString()})</span>
           </button>
 
           <button
@@ -387,23 +428,23 @@ export const AdminPortal: React.FC = () => {
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-emerald-300 font-bold border border-emerald-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Community CSV ({communityCount})</span>
+            <span>Community CSV ({communityCount.toLocaleString()})</span>
           </button>
         </div>
       </div>
 
-      {/* CONSOLIDATED MEMBERS TABLE (With Select Individual / Select All) */}
+      {/* CONSOLIDATED MEMBERS TABLE (Paginated for 10,000+ records) */}
       <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
         
         {/* Table Filters & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-extrabold text-white text-sm">
-              Collective Registered Members Table ({filteredMembers.length})
+              Collective Registered Members Table ({filteredMembers.length.toLocaleString()})
             </h3>
             {selectedIds.size > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 text-[10px] font-bold">
-                {selectedIds.size} selected for export
+                {selectedIds.size} selected
               </span>
             )}
           </div>
@@ -416,8 +457,8 @@ export const AdminPortal: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search member, phone, desk..."
-                className="bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 w-48 sm:w-60"
+                placeholder="Search PIN (sent 1...), name, hostel..."
+                className="bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 w-48 sm:w-64"
               />
             </div>
 
@@ -427,12 +468,62 @@ export const AdminPortal: React.FC = () => {
               onChange={(e) => setPortfolioFilter(e.target.value as any)}
               className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-orange-300 font-bold focus:outline-none focus:border-orange-500"
             >
-              <option value="All">All Portfolios</option>
+              <option value="All">All Portfolios ({members.length})</option>
               <option value="Schools">Schools ({schoolsCount})</option>
               <option value="Alumni">Alumni ({alumniCount})</option>
               <option value="Community">Community ({communityCount})</option>
               <option value="First Timers">First Timers ({firstTimersCount})</option>
             </select>
+
+            {/* Page Size Selector */}
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 font-semibold focus:outline-none focus:border-orange-500"
+              title="Rows per page"
+            >
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+              <option value={250}>250 / page</option>
+              <option value={500}>500 / page</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Quick Selection Helpers */}
+        <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-1 pb-1">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSelectAllCurrentPage}
+              className="text-orange-400 hover:text-orange-300 font-semibold cursor-pointer underline text-[11px]"
+            >
+              {isPageAllSelected ? 'Deselect Page' : `Select All ${paginatedMembers.length} on Page`}
+            </button>
+            <span>•</span>
+            <button
+              onClick={handleSelectAllFiltered}
+              className="text-orange-400 hover:text-orange-300 font-semibold cursor-pointer underline text-[11px]"
+            >
+              {selectedIds.size === filteredMembers.length && filteredMembers.length > 0
+                ? 'Deselect All Records'
+                : `Select All ${filteredMembers.length.toLocaleString()} Filtered Records`}
+            </button>
+            {selectedIds.size > 0 && (
+              <>
+                <span>•</span>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-rose-400 hover:text-rose-300 cursor-pointer text-[11px]"
+                >
+                  Clear Selection
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="text-[11px] text-slate-400">
+            Showing <strong className="text-white">{filteredMembers.length > 0 ? startIndex + 1 : 0}</strong> - <strong className="text-white">{endIndex}</strong> of <strong className="text-white">{filteredMembers.length.toLocaleString()}</strong>
           </div>
         </div>
 
@@ -442,61 +533,62 @@ export const AdminPortal: React.FC = () => {
             <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
               <tr>
                 <th className="p-3 w-10 text-center">
-                  <button
-                    onClick={handleSelectAll}
-                    className="cursor-pointer text-slate-400 hover:text-white"
-                    title={isAllSelected ? "Deselect All" : "Select All"}
-                  >
-                    {isAllSelected ? (
-                      <CheckSquare className="w-4 h-4 text-orange-400" />
-                    ) : (
-                      <Square className="w-4 h-4" />
-                    )}
-                  </button>
+                  <input
+                    type="checkbox"
+                    checked={isPageAllSelected}
+                    onChange={handleSelectAllCurrentPage}
+                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-orange-500 focus:ring-0 cursor-pointer"
+                    title="Select/Deselect visible rows"
+                  />
                 </th>
-                <th className="p-3">Member Name & ID</th>
+                <th className="p-3">PIN (ID)</th>
+                <th className="p-3">Full Name</th>
                 <th className="p-3">Phone</th>
                 <th className="p-3">Portfolio</th>
                 <th className="p-3">Hostel / Residence</th>
-                <th className="p-3">Registered By</th>
-                <th className="p-3">Date</th>
-                <th className="p-3 text-center">Action</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Date Registered</th>
+                <th className="p-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
-              {filteredMembers.length === 0 ? (
+            <tbody className="divide-y divide-slate-800/60">
+              {paginatedMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500 text-xs">
-                    No records found matching current criteria.
+                  <td colSpan={9} className="p-8 text-center text-slate-500 text-xs">
+                    {members.length === 0
+                      ? 'No members registered in system database yet.'
+                      : 'No records matching search or portfolio filter.'}
                   </td>
                 </tr>
               ) : (
-                filteredMembers.map((m) => {
+                paginatedMembers.map((m) => {
                   const isChecked = selectedIds.has(m.id);
-                  const portfolio = m.portfolio || (m.studentInfo?.isStudent ? 'Schools' : m.status === 'Graduated' ? 'Alumni' : 'Community');
+                  const portfolio =
+                    m.portfolio || (m.studentInfo?.isStudent ? 'Schools' : m.status === 'Graduated' ? 'Alumni' : 'Community');
 
                   return (
                     <tr
                       key={m.id}
-                      className={`hover:bg-slate-850/60 transition-colors ${
+                      className={`hover:bg-slate-850/80 transition-colors ${
                         isChecked ? 'bg-orange-500/10' : ''
                       }`}
                     >
                       <td className="p-3 text-center">
-                        <button
-                          onClick={() => handleToggleSelect(m.id)}
-                          className="cursor-pointer text-slate-400 hover:text-white"
-                        >
-                          {isChecked ? (
-                            <CheckSquare className="w-4 h-4 text-orange-400" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleSelect(m.id)}
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-orange-500 focus:ring-0 cursor-pointer"
+                        />
+                      </td>
+                      <td className="p-3 font-mono font-black text-amber-400 tracking-wider">
+                        {m.id}
                       </td>
                       <td className="p-3">
                         <div className="font-extrabold text-white">{m.fullName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{m.id}</div>
+                        {m.gender && (
+                          <div className="text-[10px] text-slate-400">{m.gender}</div>
+                        )}
                       </td>
                       <td className="p-3 font-mono text-slate-300">{m.phone}</td>
                       <td className="p-3">
@@ -513,21 +605,31 @@ export const AdminPortal: React.FC = () => {
                         </span>
                       </td>
                       <td className="p-3 text-slate-300">
-                        {m.residence || m.hostelOrResidence || '—'}
+                        {m.hostelOrResidence || m.residence || '—'}
                       </td>
                       <td className="p-3">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-medium">
-                          {m.createdBy || 'Registration Desk'}
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            m.status === 'First Timer'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          }`}
+                        >
+                          {m.status || 'Active'}
                         </span>
                       </td>
                       <td className="p-3 text-slate-400 font-mono text-[11px]">
-                        {m.registrationDate ? m.registrationDate.split('T')[0] : todayStr}
+                        {m.registrationDate ? m.registrationDate.split('T')[0] : 'Today'}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-3 text-right">
                         <button
-                          onClick={() => deleteMember(m.id, 'Admin deletion')}
-                          className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Delete Member (Admin Only)"
+                          onClick={() => {
+                            if (confirm(`Remove member ${m.fullName} (${m.id}) from database?`)) {
+                              deleteMember(m.id, 'Admin deletion from portal');
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete member"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -540,24 +642,66 @@ export const AdminPortal: React.FC = () => {
           </table>
         </div>
 
-        {/* Bottom Selection Summary Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-slate-400">
-          <div>
-            Showing <strong>{filteredMembers.length}</strong> of <strong>{members.length}</strong> total records
+        {/* Pagination Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs">
+          <div className="text-slate-400">
+            Page <strong className="text-white">{currentPage}</strong> of <strong className="text-white">{totalPages}</strong> ({filteredMembers.length.toLocaleString()} total members)
           </div>
 
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-orange-400 font-bold">{selectedIds.size} members selected</span>
-              <button
-                onClick={handleDownloadSelectedCsv}
-                className="px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold text-xs flex items-center gap-1 cursor-pointer"
-              >
-                <Download className="w-3 h-3 stroke-[2.5]" />
-                <span>Download Selected CSV</span>
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage <= 1}
+              className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="First Page"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+
+            <span className="px-3 py-1 font-bold text-white bg-slate-800 rounded-lg">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="Last Page"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+
+            {/* Jump to Page */}
+            {totalPages > 3 && (
+              <form onSubmit={handleJumpPage} className="flex items-center gap-1 ml-2">
+                <span className="text-slate-500 text-[11px]">Go:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={jumpPageInput}
+                  onChange={(e) => setJumpPageInput(e.target.value)}
+                  className="w-12 px-1.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-center text-xs text-white focus:outline-none focus:border-orange-500"
+                />
+              </form>
+            )}
+          </div>
         </div>
 
       </div>

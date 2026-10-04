@@ -8,7 +8,7 @@ export const formatUGX = (amount: number): string => {
 };
 
 /**
- * Core CSV escape and file downloader with UTF-8 BOM
+ * Core CSV escape and file downloader with UTF-8 BOM - Optimized for high-capacity 10,000+ records
  */
 export const downloadCsv = (filename: string, headers: string[], rows: (string | number | undefined | null)[][]): void => {
   const escapeCell = (val: string | number | undefined | null): string => {
@@ -20,11 +20,14 @@ export const downloadCsv = (filename: string, headers: string[], rows: (string |
     return `"${str}"`;
   };
 
-  const headerLine = headers.map(escapeCell).join(',');
-  const rowLines = rows.map((row) => row.map(escapeCell).join(','));
-  const csvContent = '\uFEFF' + [headerLine, ...rowLines].join('\r\n');
+  const chunks: string[] = ['\uFEFF', headers.map(escapeCell).join(',') + '\r\n'];
+  const CHUNK_SIZE = 500;
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    const slice = rows.slice(i, i + CHUNK_SIZE);
+    chunks.push(slice.map((row) => row.map(escapeCell).join(',')).join('\r\n') + '\r\n');
+  }
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(chunks, { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
@@ -36,22 +39,20 @@ export const downloadCsv = (filename: string, headers: string[], rows: (string |
 };
 
 /**
- * Export Member List to CSV
+ * Export Member List to CSV - Clean schema without departments
  */
 export const exportMembersToCsv = (
   members: Member[],
   homes: HomeGroup[] = [],
-  departments: Department[] = [],
+  _departments?: any[],
   filename = `manifest_members_roster_${new Date().toISOString().split('T')[0]}.csv`
 ): void => {
   const homeMap = new Map(homes.map((h) => [h.id, h.name]));
-  const deptMap = new Map(departments.map((d) => [d.id, d.name]));
 
   const headers = [
-    'Membership ID',
+    'PIN (ID)',
     'Full Name',
     'Phone Number',
-    'Alt Phone',
     'Email Address',
     'Gender',
     'Status',
@@ -61,14 +62,9 @@ export const exportMembersToCsv = (
     'Portfolio',
     'Is Student',
     'Campus / Institution',
-    'Student Reg Number',
     'Course / Program',
-    'Faculty',
     'Year of Study',
     'Fellowship Family',
-    'Ministry Departments',
-    'How Found Manifest',
-    'Invited By',
     'Date of First Attendance',
     'Registration Date',
     'Notes',
@@ -78,7 +74,6 @@ export const exportMembersToCsv = (
     m.id,
     m.fullName,
     m.phone,
-    m.altPhone || '',
     m.email || '',
     m.gender,
     m.status,
@@ -88,14 +83,9 @@ export const exportMembersToCsv = (
     m.portfolio || (m.studentInfo?.isStudent ? 'Schools' : 'Community'),
     m.studentInfo?.isStudent ? 'Yes' : 'No',
     m.studentInfo?.campus || 'Non-Student / Working',
-    m.studentInfo?.registrationNumber || '',
     m.studentInfo?.course || '',
-    m.studentInfo?.faculty || '',
     m.studentInfo?.yearOfStudy ? `Year ${m.studentInfo.yearOfStudy}` : '',
     m.homeId ? homeMap.get(m.homeId) || m.homeId : 'Unassigned',
-    m.departmentIds ? m.departmentIds.map((id) => deptMap.get(id) || id).join('; ') : '',
-    m.howFoundManifest || '',
-    m.invitedBy || '',
     m.dateOfFirstAttendance || '',
     m.registrationDate || '',
     m.notes || '',

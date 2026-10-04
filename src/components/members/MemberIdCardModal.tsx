@@ -29,7 +29,6 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { departments } = useFellowship();
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copiedPin, setCopiedPin] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -87,8 +86,6 @@ export const MemberIdCardModal: React.FC<MemberIdCardModalProps> = ({
   }, [member, firstName, lastName, hostelOrResidence]);
 
   if (!isOpen || !member) return null;
-
-  const assignedDepts = departments.filter((d) => member.departmentIds?.includes(d.id));
 
   const handleCopyPin = () => {
     navigator.clipboard.writeText(member.id);

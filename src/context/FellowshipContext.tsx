@@ -33,6 +33,11 @@ import {
   INITIAL_MESSAGES,
   INITIAL_OPERATORS,
 } from '../mockData';
+import {
+  saveMembersToIndexedDB,
+  loadMembersFromIndexedDB,
+  safeLocalStorageSet,
+} from '../utils/storageUtils';
 
 interface ToastInfo {
   id: string;
@@ -458,17 +463,8 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return [];
   });
 
-  const [departments, setDepartments] = useState<Department[]>(() => {
-    if (typeof window === 'undefined') return INITIAL_DEPARTMENTS;
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}departments`);
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_DEPARTMENTS;
-  });
+  // Departments concept removed completely as requested
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   const [events, setEvents] = useState<FellowshipEvent[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -554,18 +550,37 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return INITIAL_MESSAGES;
   });
 
-  // Local storage persistence effects
+  // High-capacity persistence effects: IndexedDB (10,000+ capacity) + Safe LocalStorage
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}members`, JSON.stringify(members));
+    saveMembersToIndexedDB(members);
+    safeLocalStorageSet(`${STORAGE_PREFIX}members`, JSON.stringify(members));
   }, [members]);
+
+  // Load from IndexedDB on initial mount if available and normalize IDs to 'sent N' format
+  useEffect(() => {
+    loadMembersFromIndexedDB().then((stored) => {
+      if (stored && stored.length > 0) {
+        setMembers((prev) => (stored.length > prev.length ? stored : prev));
+      }
+    });
+
+    // Auto-normalize any old non-sent IDs to 'sent 1, sent 2...'
+    setMembers((prev) => {
+      let changed = false;
+      const normalized = prev.map((m, idx) => {
+        if (!m.id || !m.id.toLowerCase().startsWith('sent ')) {
+          changed = true;
+          return { ...m, id: `sent ${idx + 1}` };
+        }
+        return m;
+      });
+      return changed ? normalized : prev;
+    });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}homes`, JSON.stringify(homes));
   }, [homes]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}departments`, JSON.stringify(departments));
-  }, [departments]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
@@ -1038,23 +1053,19 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return `UGX ${Number(amount || 0).toLocaleString('en-US')}`;
   };
 
-  // ID Generators: Sequential PINs formatted as sent 1, sent 2, sent 3, ... until registration is done
+  // ID Generators: Sequential PINs strictly formatted as sent 1, sent 2, sent 3, ... up to infinity
   const generateMemberId = (): string => {
     let maxNum = 0;
-    const wordsMap: Record<string, number> = {
-      one: 1, two: 2, three: 3, four: 4, five: 5,
-      six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
-    };
     members.forEach((m) => {
-      const match = m.id.match(/^(?:sent[-\s]?|MAN-\d{4}-)(\d+)$/i);
+      const match = m.id.match(/^sent\s+(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxNum) maxNum = num;
       } else {
-        const wordMatch = m.id.match(/^sent\s+([a-z]+)$/i);
-        if (wordMatch && wordsMap[wordMatch[1].toLowerCase()]) {
-          const num = wordsMap[wordMatch[1].toLowerCase()];
-          if (num > maxNum) maxNum = num;
+        const anyNum = m.id.match(/(\d+)/);
+        if (anyNum) {
+          const num = parseInt(anyNum[1], 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
         }
       }
     });

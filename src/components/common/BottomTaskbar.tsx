@@ -18,7 +18,6 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = () => {
     activeTab,
     setActiveTab,
     members = [],
-    departments = [],
     homes = [],
     isAdminAuthenticated,
   } = useFellowship();
@@ -36,7 +35,7 @@ export const BottomTaskbar: React.FC<BottomTaskbarProps> = () => {
       label: 'Fellowship Families',
       shortLabel: 'Families',
       icon: HeartHandshake,
-      badge: departments.length + homes.length,
+      badge: homes.length,
       badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
     },
     {

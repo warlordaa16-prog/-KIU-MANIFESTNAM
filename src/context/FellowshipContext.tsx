@@ -556,7 +556,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     safeLocalStorageSet(`${STORAGE_PREFIX}members`, JSON.stringify(members));
   }, [members]);
 
-  // Load from IndexedDB on initial mount if available and normalize IDs to 'sent N' format
+  // Load from IndexedDB on initial mount if available and normalize IDs to 'Saint N' format
   useEffect(() => {
     loadMembersFromIndexedDB().then((stored) => {
       if (stored && stored.length > 0) {
@@ -564,13 +564,16 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     });
 
-    // Auto-normalize any old non-sent IDs to 'sent 1, sent 2...'
+    // Auto-normalize any old non-Saint IDs to 'Saint 1, Saint 2...'
     setMembers((prev) => {
       let changed = false;
       const normalized = prev.map((m, idx) => {
-        if (!m.id || !m.id.toLowerCase().startsWith('sent ')) {
+        if (!m.id || !m.id.startsWith('Saint ')) {
           changed = true;
-          return { ...m, id: `sent ${idx + 1}` };
+          // Extract existing number if present (e.g. sent 5 -> Saint 5)
+          const numMatch = m.id?.match(/(\d+)/);
+          const num = numMatch ? parseInt(numMatch[1], 10) : idx + 1;
+          return { ...m, id: `Saint ${num}` };
         }
         return m;
       });
@@ -1053,11 +1056,11 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return `UGX ${Number(amount || 0).toLocaleString('en-US')}`;
   };
 
-  // ID Generators: Sequential PINs strictly formatted as sent 1, sent 2, sent 3, ... up to infinity
+  // ID Generators: Sequential PINs strictly formatted as Saint 1, Saint 2, Saint 3, ... up to infinity
   const generateMemberId = (): string => {
     let maxNum = 0;
     members.forEach((m) => {
-      const match = m.id.match(/^sent\s+(\d+)$/i);
+      const match = m.id.match(/^(?:Saint|sent)\s+(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxNum) maxNum = num;
@@ -1070,7 +1073,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     });
     const nextNum = Math.max(members.length + 1, maxNum + 1);
-    return `sent ${nextNum}`;
+    return `Saint ${nextNum}`;
   };
 
   // Add Member
@@ -1859,7 +1862,7 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const entry = demoEntries[i];
       await new Promise((resolve) => setTimeout(resolve, 350));
 
-      const memberId = `sent ${members.length + i + 1}`;
+      const memberId = `Saint ${members.length + i + 1}`;
       const nowIso = new Date().toISOString();
 
       const newM: Member = {

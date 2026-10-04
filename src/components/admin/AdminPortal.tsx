@@ -457,7 +457,7 @@ export const AdminPortal: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search PIN (sent 1...), name, hostel..."
+                placeholder="Search PIN (Saint 1...), name, hostel..."
                 className="bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 w-48 sm:w-64"
               />
             </div>

@@ -1,6 +1,6 @@
 /**
- * Helper utility for fellowship registration PIN format: sent 1, sent 2, sent 3, ...
- * Handles both number and word equivalents (e.g. 'sent one' -> 1).
+ * Helper utility for fellowship registration PIN format: Saint 1, Saint 2, Saint 3, ...
+ * Handles both number and word equivalents (e.g. 'Saint 1' / 'Saint one').
  */
 
 const WORDS_TO_NUM: Record<string, number> = {
@@ -33,9 +33,9 @@ const NUM_TO_WORDS: Record<number, string> = {
 
 export const getPinNumber = (id: string): number | null => {
   if (!id) return null;
-  const numMatch = id.match(/^(?:sent[-\s]?|MAN-\d{4}-)(\d+)$/i);
+  const numMatch = id.match(/^(?:Saint|sent|MAN-\d{4}-)[-\s]?(\d+)$/i);
   if (numMatch) return parseInt(numMatch[1], 10);
-  const wordMatch = id.match(/^sent\s+([a-z]+)$/i);
+  const wordMatch = id.match(/^(?:Saint|sent)\s+([a-z]+)$/i);
   if (wordMatch && WORDS_TO_NUM[wordMatch[1].toLowerCase()]) {
     return WORDS_TO_NUM[wordMatch[1].toLowerCase()];
   }
@@ -46,7 +46,7 @@ export const formatPinDisplay = (id: string): string => {
   if (!id) return '';
   const num = getPinNumber(id);
   if (num !== null) {
-    return `sent ${num}`;
+    return `Saint ${num}`;
   }
   return id;
 };
@@ -59,9 +59,24 @@ export const matchesPinSearch = (id: string, searchTerm: string): boolean => {
 
   const num = getPinNumber(id);
   if (num !== null) {
-    if (term === String(num) || term === `sent ${num}` || term === `sent-${num}`) return true;
+    if (
+      term === String(num) ||
+      term === `saint ${num}` ||
+      term === `saint-${num}` ||
+      term === `sent ${num}` ||
+      term === `sent-${num}`
+    ) {
+      return true;
+    }
     const word = NUM_TO_WORDS[num];
-    if (word && (term === word || term === `sent ${word}`)) return true;
+    if (
+      word &&
+      (term === word ||
+        term === `saint ${word}` ||
+        term === `sent ${word}`)
+    ) {
+      return true;
+    }
   }
   return false;
 };

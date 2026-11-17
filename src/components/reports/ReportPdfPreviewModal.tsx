@@ -451,7 +451,7 @@ export const ReportPdfPreviewModal: React.FC<ReportPdfPreviewModalProps> = ({
               </h2>
               <p className="text-[11px] text-slate-600 mt-0.5">
                 {activeReportTab === 'members' && `Certified active and student membership roster (${filteredMembers.length} records matching current criteria)`}
-                {activeReportTab === 'financial' && `Reconciled treasury ledger of tithes, offerings, donations, and ministry expenditures`}
+                {activeReportTab === 'financial' && `Reconciled treasury ledger of tithes, offerings, donations, and fellowship expenditures`}
                 {activeReportTab === 'executive' && `High-level executive briefing for board, pastoral leadership, and fellowship coordinators`}
               </p>
             </div>

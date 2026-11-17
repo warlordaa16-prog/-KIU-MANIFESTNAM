@@ -53,7 +53,7 @@ export const INITIAL_OPERATORS: CollaborativeOperator[] = [
   {
     id: 'op-grace',
     name: 'Grace',
-    roleTitle: 'Welfare & Pastoral Intake',
+    roleTitle: 'Pastoral Intake & Follow-up',
     avatarColor: 'bg-rose-500',
     badgeBg: 'bg-rose-500/10',
     badgeBorder: 'border-rose-500/40',

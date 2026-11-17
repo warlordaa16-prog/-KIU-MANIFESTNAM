@@ -7,7 +7,6 @@ import {
   WifiOff,
   RefreshCw,
   Sparkles,
-  ExternalLink,
   ChevronDown,
   Activity,
   UserCheck,
@@ -92,12 +91,6 @@ export const MultiPartyBar: React.FC = () => {
   const getOperatorColor = (name: string) => {
     const op = operators.find((o) => o.name.toLowerCase() === name.toLowerCase());
     return op?.avatarColor || 'bg-slate-700';
-  };
-
-  const openNewTabAs = (operatorName: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('operator', operatorName);
-    window.open(url.toString(), '_blank');
   };
 
   return (

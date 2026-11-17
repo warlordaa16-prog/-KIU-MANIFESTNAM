@@ -1581,18 +1581,15 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const id = `dept-${makeUniqueId('d')}`;
     const newDept: Department = { ...deptData, id };
     setDepartments((prev) => [...prev, newDept]);
-    showToast(`Added Ministry: ${newDept.name}`, 'success');
     return newDept;
   };
 
   const updateDepartment = (id: string, updates: Partial<Department>) => {
     setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, ...updates } : d)));
-    showToast(`Updated ministry details`, 'info');
   };
 
   const deleteDepartment = (id: string) => {
     setDepartments((prev) => prev.filter((d) => d.id !== id));
-    showToast(`Ministry removed`, 'warning');
   };
 
   const clearAllGroups = () => {
@@ -1888,7 +1885,6 @@ export const FellowshipProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         dateOfFirstAttendance: nowIso.split('T')[0],
         registrationDate: nowIso.split('T')[0],
         howFoundManifest: 'Campus Outreach',
-        departmentIds: [],
         createdBy: entry.operator,
         createdAt: nowIso,
         updatedBy: entry.operator,

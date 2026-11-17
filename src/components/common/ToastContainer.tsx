@@ -8,22 +8,22 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div className="fixed top-16 left-4 right-4 sm:top-auto sm:bottom-20 sm:left-auto sm:right-6 z-50 flex flex-col gap-2 sm:max-w-sm sm:w-full pointer-events-none">
       {toasts.map((toast) => {
-        let bgColor = 'bg-slate-900 border-slate-700 text-slate-100';
+        let bgColor = 'bg-slate-900/95 border-slate-700 text-slate-100';
         let Icon = Info;
         let iconColor = 'text-blue-400';
 
         if (toast.type === 'success') {
-          bgColor = 'bg-slate-900 border-emerald-500/50 text-slate-100';
+          bgColor = 'bg-slate-900/95 border-emerald-500/50 text-slate-100';
           Icon = CheckCircle2;
           iconColor = 'text-emerald-400';
         } else if (toast.type === 'warning') {
-          bgColor = 'bg-slate-900 border-amber-500/50 text-slate-100';
+          bgColor = 'bg-slate-900/95 border-amber-500/50 text-slate-100';
           Icon = AlertTriangle;
           iconColor = 'text-amber-400';
         } else if (toast.type === 'error') {
-          bgColor = 'bg-slate-900 border-rose-500/50 text-slate-100';
+          bgColor = 'bg-slate-900/95 border-rose-500/50 text-slate-100';
           Icon = AlertCircle;
           iconColor = 'text-rose-400';
         }
@@ -31,24 +31,24 @@ export const ToastContainer: React.FC = () => {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-2xl backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-3 duration-200 ${bgColor}`}
+            className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl border shadow-2xl backdrop-blur-md transition-all animate-in fade-in slide-in-from-top-2 sm:slide-in-from-bottom-3 duration-200 ${bgColor}`}
           >
             <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
             <div className="flex-1 text-xs font-medium leading-relaxed">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                {toast.operator && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-orange-400 font-bold border border-slate-700 font-mono">
-                    {toast.operator}
-                  </span>
-                )}
-              </div>
+              {toast.operator && (
+                <div className="text-[11px] text-orange-400 font-bold mb-0.5">
+                  {toast.operator}
+                </div>
+              )}
               <div>{toast.message}</div>
             </div>
             <button
+              type="button"
               onClick={() => removeToast(toast.id)}
-              className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-colors"
+              className="min-h-[36px] min-w-[36px] flex items-center justify-center text-slate-400 hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+              aria-label="Dismiss notification"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         );

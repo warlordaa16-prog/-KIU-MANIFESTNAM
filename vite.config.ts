@@ -11,18 +11,19 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: ['apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
         manifest: {
           id: '/',
-          name: 'Manifest Fellowship Management System',
+          name: 'Manifest Fellowship',
           short_name: 'Manifest',
-          description: 'Centralized digital membership registration and management system for Manifest Fellowship.',
-          theme_color: '#020617',
-          background_color: '#020617',
+          description: 'Mobile membership registration, PIN passes, and fellowship family management for Manifest Fellowship.',
+          theme_color: '#050507',
+          background_color: '#050507',
           display: 'standalone',
           orientation: 'portrait-primary',
           start_url: '/',
           scope: '/',
+          categories: ['productivity', 'social'],
           icons: [
             {
               src: '/pwa-192x192.png',
@@ -75,10 +76,26 @@ export default defineConfig(() => {
                 },
               },
             },
+            {
+              urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'fellowship-api-cache',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
           ],
         },
         devOptions: {
-          enabled: false,
+          enabled: true,
+          type: 'module',
         },
       }),
     ],

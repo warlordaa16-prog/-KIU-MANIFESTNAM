@@ -287,9 +287,24 @@ export interface PrintableReportConfig {
 }
 
 export const printReportAsPdf = (config: PrintableReportConfig): void => {
-  const printWindow = window.open('', '_blank', 'width=1000,height=800');
-  if (!printWindow) {
-    alert('Please allow popups to generate and print the PDF report.');
+  const existingFrame = document.getElementById('manifest-print-frame');
+  if (existingFrame) {
+    existingFrame.remove();
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'manifest-print-frame';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const printDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!printDoc) {
+    iframe.remove();
     return;
   }
 
@@ -665,32 +680,36 @@ export const printReportAsPdf = (config: PrintableReportConfig): void => {
     </div>
   </div>
 
-  <script>
-    window.onload = function() {
-      window.print();
-    };
-  </script>
 </body>
 </html>
 `;
 
-  printWindow.document.open();
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  printDoc.open();
+  printDoc.write(htmlContent);
+  printDoc.close();
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch {
+      // Fallback: silent no-op if print dialog blocked by browser
+    }
+  }, 150);
 };
 
 /**
- * Export Fellowship Families and Ministries Directory to CSV
+ * Export Fellowship Families Directory to CSV
  */
 export const exportFamiliesDirectoryToCsv = (
   homes: HomeGroup[] = [],
-  departments: Department[] = [],
+  _departments?: any[],
   filename = `manifest_fellowship_families_${new Date().toISOString().split('T')[0]}.csv`
 ): void => {
   const headers = [
     'Category',
     'ID',
-    'Family / Ministry Name',
+    'Fellowship Family Name',
     'Zone / Area',
     'Head / Leader',
     'Contact Phone',
@@ -711,19 +730,7 @@ export const exportFamiliesDirectoryToCsv = (
     h.description || '',
   ]);
 
-  const deptRows = departments.map((d) => [
-    'Ministry / Department',
-    d.id,
-    d.name,
-    'Central Campus',
-    d.leaderName,
-    d.leaderPhone,
-    d.meetingSchedule || '',
-    'Campus Auditorium',
-    d.description || '',
-  ]);
-
-  downloadCsv(filename, headers, [...homeRows, ...deptRows]);
+  downloadCsv(filename, headers, homeRows);
 };
 
 export const exportGroupsDirectoryToCsv = exportFamiliesDirectoryToCsv;

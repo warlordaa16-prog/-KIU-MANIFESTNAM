@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFellowship } from '../../context/FellowshipContext';
 import { Member, MemberPortfolio } from '../../types';
 import { exportMembersToCsv } from '../../utils/exportUtils';
+import { matchesPinSearch } from '../../utils/pinUtils';
 import {
   Users,
   Search,
@@ -10,18 +11,13 @@ import {
   QrCode,
   Eye,
   MapPin,
-  GraduationCap,
-  Building,
-  Briefcase,
-  UserCheck,
-  Sparkles,
   Trash2,
   AlertTriangle,
-  CheckSquare,
-  Square,
   Clock,
   RotateCcw,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface MemberDirectoryProps {
@@ -38,26 +34,25 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   const {
     members,
     homes = [],
-    departments = [],
-    operators = [],
     searchQuery,
     setSearchQuery,
     currentUserName,
     deleteMember,
     deleteMembers,
     run7DayAutoUpdate,
-    autoUpdateConfig,
     updateMember,
     emptyModelForUse,
     loadDemoData,
-    simulateConcurrentEntryDemo,
     isAdminAuthenticated,
   } = useFellowship();
 
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [portfolioFilter, setPortfolioFilter] = useState<string>('All');
   const [residenceFilter, setResidenceFilter] = useState<string>('All');
-  const [operatorFilter, setOperatorFilter] = useState<string>('All');
+
+  // Pagination for 10,000+ mobile performance
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 40;
 
   // Deletion states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -73,34 +68,19 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
     return 'Community';
   };
 
-  const getOperatorColor = (operatorName?: string) => {
-    if (!operatorName) return 'bg-slate-600';
-    const clean = operatorName.toLowerCase();
-    if (clean.includes('anibal')) return 'bg-emerald-500';
-    if (clean.includes('marcus')) return 'bg-cyan-500';
-    if (clean.includes('ahebwa')) return 'bg-amber-500';
-    if (clean.includes('grace')) return 'bg-rose-500';
-    if (clean.includes('david')) return 'bg-violet-500';
-    if (clean.includes('sarah')) return 'bg-blue-500';
-    if (clean.includes('emmanuel')) return 'bg-orange-500';
-    return 'bg-purple-500';
-  };
-
   // Counts
   const schoolsCount = members.filter((m) => getMemberPortfolio(m) === 'Schools').length;
   const alumniCount = members.filter((m) => getMemberPortfolio(m) === 'Alumni').length;
   const communityCount = members.filter((m) => getMemberPortfolio(m) === 'Community').length;
-  const firstTimersCount = members.filter((m) => m.status === 'First Timer' || m.isFirstTimer).length;
 
   // Filter logic
   const filteredMembers = members.filter((member) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
       member.fullName.toLowerCase().includes(q) ||
-      member.id.toLowerCase().includes(q) ||
+      matchesPinSearch(member.id, q) ||
       member.phone.toLowerCase().includes(q) ||
-      (member.email && member.email.toLowerCase().includes(q)) ||
       (member.residence && member.residence.toLowerCase().includes(q)) ||
       (member.hostelOrResidence && member.hostelOrResidence.toLowerCase().includes(q)) ||
       (member.studentInfo?.campus && member.studentInfo.campus.toLowerCase().includes(q)) ||
@@ -115,26 +95,32 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
       member.residence === residenceFilter ||
       member.hostelOrResidence === residenceFilter;
 
-    const matchesOperator =
-      operatorFilter === 'All' ||
-      (member.createdBy && member.createdBy.toLowerCase() === operatorFilter.toLowerCase());
-
-    return matchesSearch && matchesStatus && matchesPortfolio && matchesResidence && matchesOperator;
+    return matchesSearch && matchesStatus && matchesPortfolio && matchesResidence;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, portfolioFilter, residenceFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
+  const paginatedMembers = filteredMembers.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const today = new Date().toISOString().split('T')[0];
 
   const exportMembersCsv = () => {
-    exportMembersToCsv(filteredMembers, homes, departments, `manifest_kiu_members_${today}.csv`);
+    exportMembersToCsv(filteredMembers, homes, [], `manifest_kiu_members_${today}.csv`);
   };
 
-  const residences = ['Nana Hostel', 'Olympia Hostel', 'Akamwesi Hostel', 'Ideal Hostel', 'Douglas Villa', 'Prestige Hostel', 'Kansanga Central', 'Bunga Residence'];
-  const knownOperators = Array.from(
-    new Set([
-      ...(operators.map((o) => o.name)),
-      ...(members.map((m) => m.createdBy).filter(Boolean) as string[]),
-    ])
-  );
+  const residences = Array.from(
+    new Set(
+      members
+        .map((m) => m.hostelOrResidence || m.residence)
+        .filter((r): r is string => Boolean(r && r.trim()))
+    )
+  ).slice(0, 30);
 
   // Selection toggle
   const toggleSelectMember = (id: string) => {
@@ -147,14 +133,13 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredMembers.length && filteredMembers.length > 0) {
+    if (selectedIds.size === paginatedMembers.length && paginatedMembers.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredMembers.map((m) => m.id)));
+      setSelectedIds(new Set(paginatedMembers.map((m) => m.id)));
     }
   };
 
-  // Execute single delete
   const handleConfirmSingleDelete = () => {
     if (!memberToDelete) return;
     deleteMember(memberToDelete.id, `Deleted by ${currentUserName} from directory`);
@@ -166,7 +151,6 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
     setMemberToDelete(null);
   };
 
-  // Execute batch delete
   const handleConfirmBatchDelete = () => {
     if (selectedIds.size === 0) return;
     const idsArray = Array.from(selectedIds);
@@ -175,7 +159,6 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
     setIsBatchDeleteModalOpen(false);
   };
 
-  // Manual Trigger 7-Day Auto Update
   const handleTriggerAutoUpdate = async () => {
     setIsAutoUpdating(true);
     try {
@@ -185,11 +168,9 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
     }
   };
 
-  // Simulation: Test 7 Days Passing by advancing dates
   const handleSimulate7DaysPassing = async () => {
     setIsAutoUpdating(true);
     try {
-      // For any first timers or recent members, set registration date to 8 days ago
       const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       members.forEach((m) => {
         if (m.status === 'First Timer' || m.isFirstTimer) {
@@ -199,7 +180,6 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
           });
         }
       });
-      // Now run 7-day auto update to transition them
       setTimeout(async () => {
         await run7DayAutoUpdate(true);
         setIsAutoUpdating(false);
@@ -210,532 +190,454 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <Users className="w-5 h-5 text-orange-400" />
-            Members & Portfolios Directory
+            <span>Members Directory</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Database of {members.length} members across Schools, Alumni, and Community portfolios
+          <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
+            {members.length.toLocaleString()} registered · Schools, Alumni &amp; Community
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Admin Exclusive Actions */}
+        <div className="flex flex-wrap items-center gap-2">
           {isAdminAuthenticated && (
             <>
               {members.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => setShowEmptyConfirm(true)}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Empty model to make ready for live data entry"
+                  className="min-h-[44px] px-3 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Empty Model</span>
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span>Empty</span>
                 </button>
               )}
 
               <button
+                type="button"
                 onClick={exportMembersCsv}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="min-h-[44px] px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Download CSV</span>
+                <Download className="w-4 h-4 text-emerald-400" />
+                <span>CSV</span>
               </button>
             </>
           )}
 
           <button
+            type="button"
             onClick={onOpenRegister}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95 border border-orange-400/30 cursor-pointer"
+            className="hidden sm:flex min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-extrabold text-xs items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95 cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Register New Member</span>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Register Member</span>
           </button>
         </div>
       </div>
 
-      {/* 7-DAY AUTO-UPDATE ENGINE CONTROL CARD (Admin Only) */}
+      {/* 7-Day Auto-Update Engine (Admin Only) */}
       {isAdminAuthenticated && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 animate-pulse" />
+        <div className="p-4 rounded-2xl bg-slate-900/95 border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-white text-sm">7-Day Lifecycle Auto-Update Engine</span>
-                <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Active
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-300 mt-0.5">
-                Automatically transitions First Timers to <strong>Returning Visitors</strong> after 7 days and links unassigned hostel members to families.
+              <div className="font-bold text-white text-sm">7-Day Lifecycle Auto-Update</div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Transitions First Timers to Returning Visitors after 7 days and groups hostel members.
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={handleTriggerAutoUpdate}
               disabled={isAutoUpdating}
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title="Scan all members and run 7-day update"
+              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>{isAutoUpdating ? 'Processing...' : '⚡ Run 7-Day Auto Update'}</span>
+              <span>{isAutoUpdating ? 'Processing...' : 'Run 7-Day Update'}</span>
             </button>
 
             <button
+              type="button"
               onClick={handleSimulate7DaysPassing}
               disabled={isAutoUpdating}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-amber-300 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title="Fast-forward records by 7 days to simulate and observe the automatic transition"
+              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-amber-300 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span>⏩ Simulate 7 Days (+7 Days Test)</span>
+              <span>Simulate +7 Days</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Filter & Search Bar */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3.5 shadow-md">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-          
+      {/* Search & Horizontal Mobile Portfolio Tabs */}
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {/* Search box */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative sm:col-span-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
+              type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search name, PIN, party..."
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+              placeholder="Search name, Saint 1, phone..."
+              className="w-full min-h-[44px] bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 text-sm sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
             />
           </div>
 
-          {/* Status Filter */}
-          <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500"
-            >
-              <option value="All">All Member Statuses</option>
-              <option value="Active">Active</option>
-              <option value="First Timer">First Timer</option>
-              <option value="Returning Visitor">Returning Visitor</option>
-              <option value="Graduated">Graduated</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full min-h-[44px] bg-slate-950 border border-slate-700 rounded-xl px-3 text-sm sm:text-xs text-white focus:outline-none focus:border-orange-500"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="First Timer">First Timer</option>
+            <option value="Returning Visitor">Returning Visitor</option>
+            <option value="Graduated">Graduated</option>
+            <option value="Inactive">Inactive</option>
+          </select>
 
-          {/* Portfolio Filter */}
-          <div>
-            <select
-              value={portfolioFilter}
-              onChange={(e) => setPortfolioFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500 font-semibold"
-            >
-              <option value="All">All Portfolios ({members.length})</option>
-              <option value="Schools">🎓 Schools ({schoolsCount})</option>
-              <option value="Alumni">🏛️ Alumni ({alumniCount})</option>
-              <option value="Community">🤝 Community ({communityCount})</option>
-            </select>
-          </div>
-
-          {/* Residence / Hostel Filter */}
-          <div>
-            <select
-              value={residenceFilter}
-              onChange={(e) => setResidenceFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-orange-500"
-            >
-              <option value="All">All Hostels & Residences</option>
-              {residences.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Operator Attribution Filter */}
-          <div>
-            <select
-              value={operatorFilter}
-              onChange={(e) => setOperatorFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-orange-500/40 rounded-lg px-2.5 py-2 text-orange-300 font-semibold focus:outline-none focus:border-orange-500"
-            >
-              <option value="All">All Entry Parties (Collaborative)</option>
-              {knownOperators.map((op) => {
-                const count = members.filter((m) => m.createdBy?.toLowerCase() === op.toLowerCase()).length;
-                return (
-                  <option key={op} value={op}>
-                    Entered by {op} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
+          <select
+            value={residenceFilter}
+            onChange={(e) => setResidenceFilter(e.target.value)}
+            className="w-full min-h-[44px] bg-slate-950 border border-slate-700 rounded-xl px-3 text-sm sm:text-xs text-white focus:outline-none focus:border-orange-500"
+          >
+            <option value="All">All Hostels &amp; Residences</option>
+            {residences.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Quick Filter Tags with real counts (if operators exist) */}
-        {knownOperators.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800 text-[11px]">
-            <span className="text-slate-500 font-medium mr-1">Entry Operators:</span>
-            
+        {/* Interactive Segmented Portfolio Filter Strip */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
+          {[
+            { key: 'All', label: `All (${members.length})` },
+            { key: 'Schools', label: `Schools (${schoolsCount})` },
+            { key: 'Alumni', label: `Alumni (${alumniCount})` },
+            { key: 'Community', label: `Community (${communityCount})` },
+          ].map((tab) => (
             <button
-              onClick={() => {
-                setOperatorFilter('All');
-                setStatusFilter('All');
-                setPortfolioFilter('All');
-                setResidenceFilter('All');
-                setSearchQuery('');
-              }}
-              className={`px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
-                operatorFilter === 'All' && statusFilter === 'All' && portfolioFilter === 'All'
-                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              key={tab.key}
+              type="button"
+              onClick={() => setPortfolioFilter(tab.key)}
+              className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                portfolioFilter === tab.key
+                  ? 'bg-orange-500 text-slate-950'
+                  : 'bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700/70'
               }`}
             >
-              All Operators ({members.length})
+              {tab.label}
             </button>
-
-            {knownOperators.map((op) => {
-              const count = members.filter((m) => m.createdBy?.toLowerCase() === op.toLowerCase()).length;
-              const isSelected = operatorFilter.toLowerCase() === op.toLowerCase();
-              return (
-                <button
-                  key={op}
-                  onClick={() => setOperatorFilter(isSelected ? 'All' : op)}
-                  className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    isSelected
-                      ? 'bg-orange-500 text-slate-950 font-bold shadow-sm'
-                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-750 border border-slate-700/60'
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full ${getOperatorColor(op)}`} />
-                  <span>{op} ({count})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
-      {/* STICKY BATCH SELECTION & ACTION BAR */}
+      {/* Batch Selection Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="p-3 bg-slate-900 border-2 border-rose-500/50 rounded-2xl shadow-2xl flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
-              {selectedIds.size} Selected
-            </span>
-            <span className="text-slate-300">
-              of {filteredMembers.length} member records
-            </span>
+        <div className="p-3 bg-slate-900 border border-rose-500/50 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-slate-200 font-semibold tabular-nums">
+            {selectedIds.size} selected of {filteredMembers.length}
           </div>
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold"
+              className="min-h-[40px] px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold cursor-pointer"
             >
-              Deselect All
+              Clear
             </button>
             <button
+              type="button"
               onClick={() => setIsBatchDeleteModalOpen(true)}
-              className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete Selected ({selectedIds.size})</span>
+              <span>Delete ({selectedIds.size})</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Members Table */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300 border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 bg-slate-850/80 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
-                {/* Checkbox column */}
-                <th className="py-3 px-3 w-10 text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.size > 0 && selectedIds.size === filteredMembers.length}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded text-orange-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
-                    title="Select/Deselect All"
-                  />
-                </th>
-                <th className="py-3 px-4">Member Name & Contact</th>
-                <th className="py-3 px-4">MAN ID</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Portfolio / Course</th>
-                <th className="py-3 px-4">Hostel / Residence</th>
-                <th className="py-3 px-4">Entered By</th>
-                <th className="py-3 px-4 text-right">Delete & Actions</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-800">
-              {filteredMembers.map((member) => {
+      {/* Members List (Mobile Cards + Desktop Table) */}
+      <div className="rounded-2xl bg-slate-900/95 border border-slate-800 overflow-hidden shadow-xl">
+        {paginatedMembers.length === 0 ? (
+          <div className="py-12 px-4 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-orange-400">
+                {members.length === 0 ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                ) : (
+                  <Users className="w-6 h-6 text-orange-400" />
+                )}
+              </div>
+              <span className="text-white font-bold text-sm sm:text-base">
+                {members.length === 0 ? 'Ready for Member Intake' : 'No Matching Member Records'}
+              </span>
+              <span className="text-xs text-slate-400 leading-relaxed">
+                {members.length === 0
+                  ? 'Register your first fellowship member to assign Saint 1 and generate their mobile QR pass.'
+                  : 'No members matched your search or filter criteria.'}
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={onOpenRegister}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Register Member</span>
+                </button>
+                {members.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={loadDemoData}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Load Sample</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Interactive Tap Cards (md:hidden) */}
+            <div className="md:hidden divide-y divide-slate-800/80">
+              {paginatedMembers.map((member) => {
                 const p = getMemberPortfolio(member);
-                const op = member.createdBy || 'Anibal';
                 const isSelected = selectedIds.has(member.id);
 
                 return (
-                  <tr
+                  <div
                     key={member.id}
-                    className={`hover:bg-slate-850/80 transition-colors group ${
+                    className={`p-3.5 flex items-center gap-3 ${
                       isSelected ? 'bg-orange-500/10' : ''
                     }`}
                   >
-                    {/* Checkbox */}
-                    <td className="py-3 px-3 text-center">
+                    <label className="min-h-[44px] min-w-[36px] flex items-center justify-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelectMember(member.id)}
-                        className="w-4 h-4 rounded text-orange-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
+                        className="w-5 h-5 rounded text-orange-500 bg-slate-800 border-slate-600 focus:ring-0 cursor-pointer"
                       />
-                    </td>
+                    </label>
 
-                    {/* Name & Photo */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-700 border border-slate-700 flex items-center justify-center font-bold text-orange-400 shrink-0">
-                          {member.fullName.charAt(0)}
-                        </div>
-                        <div>
-                          <div
-                            onClick={() => onSelectMember(member)}
-                            className="font-bold text-white hover:text-orange-400 cursor-pointer flex items-center gap-1.5"
-                          >
-                            <span>{member.fullName}</span>
-                            {member.preferredName && (
-                              <span className="text-[11px] text-slate-400 font-normal">
-                                ({member.preferredName})
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                            <span>{member.phone}</span>
-                            <span>•</span>
-                            <span>{member.gender}</span>
-                          </div>
-                        </div>
+                    <button
+                      type="button"
+                      onClick={() => onSelectMember(member)}
+                      className="flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <div className="font-bold text-white text-sm truncate">
+                        {member.fullName}
                       </div>
-                    </td>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5 truncate">
+                        <span className="font-mono font-bold text-amber-400">{member.id}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{p}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="truncate">{member.hostelOrResidence || member.residence || member.phone}</span>
+                      </div>
+                    </button>
 
-                    {/* MAN ID */}
-                    <td className="py-3 px-4 font-mono">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-orange-400 font-bold text-[10px] border border-slate-700">
-                        {member.id}
-                      </span>
-                    </td>
-
-                    {/* Status badge */}
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          member.status === 'Active'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : member.status === 'First Timer'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : member.status === 'Returning Visitor'
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                            : 'bg-slate-800 text-slate-400'
-                        }`}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onViewIdCard(member)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-orange-400 cursor-pointer"
+                        aria-label={`QR pass for ${member.fullName}`}
                       >
-                        {member.status}
-                      </span>
-                    </td>
+                        <QrCode className="w-4 h-4" />
+                      </button>
 
-                    {/* Portfolio & Details */}
-                    <td className="py-3 px-4">
-                      {p === 'Schools' ? (
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                              Schools
-                            </span>
-                            <span className="font-medium text-slate-200 truncate max-w-[160px]">
-                              {member.studentInfo?.course || 'University Student'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate max-w-[180px] mt-0.5">
-                            {member.studentInfo?.yearOfStudy ? `Yr ${member.studentInfo.yearOfStudy} • ` : ''}
-                            {member.studentInfo?.campus?.split('(')[0]?.trim() || member.studentInfo?.campus || 'Campus'}
-                          </div>
-                        </div>
-                      ) : p === 'Alumni' ? (
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                              Alumni
-                            </span>
-                            <span className="font-medium text-purple-200 truncate max-w-[160px]">
-                              {member.studentInfo?.course || 'Fellowship Graduate'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate max-w-[180px] mt-0.5">
-                            {member.notes || 'KIU Alumni Network'}
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Community
-                            </span>
-                            <span className="font-medium text-emerald-200 truncate max-w-[160px]">
-                              {member.studentInfo?.course || 'Community Member'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate max-w-[180px] mt-0.5">
-                            {member.notes || 'Community Partner'}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Area / Residence */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                        <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="truncate max-w-[150px] font-medium" title={member.hostelOrResidence || member.residence}>
-                          {member.hostelOrResidence || member.residence || 'Kansanga'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Party Attribution Column */}
-                    <td className="py-3 px-4">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/80">
-                        <div className={`w-2 h-2 rounded-full ${getOperatorColor(op)} ring-1 ring-white/20`} />
-                        <span className="font-bold text-white text-[11px]">{op}</span>
-                      </div>
-                      {member.updatedBy && member.updatedBy !== member.createdBy && (
-                        <div className="text-[9px] text-slate-400 mt-0.5 pl-0.5 truncate max-w-[120px]">
-                          Edited by {member.updatedBy}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Actions: View QR, Profile, and Delete */}
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        
-                        {/* QR Badge Card button */}
-                        <button
-                          onClick={() => onViewIdCard(member)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors cursor-pointer"
-                          title="View Digital Member Pass & QR"
-                        >
-                          <QrCode className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* View Full Profile */}
-                        <button
-                          onClick={() => onSelectMember(member)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="View & Edit Profile"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Direct Delete Access Button */}
-                        <button
-                          onClick={() => setMemberToDelete(member)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/60 transition-colors cursor-pointer"
-                          title="Delete Member"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-
-                  </tr>
+                      <button
+                        type="button"
+                        onClick={() => setMemberToDelete(member)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 cursor-pointer"
+                        aria-label={`Delete ${member.fullName}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
+            </div>
 
-              {filteredMembers.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto">
-                      <div className="w-14 h-14 rounded-2xl bg-slate-800/90 border border-slate-700/80 flex items-center justify-center text-orange-400">
-                        {members.length === 0 ? <CheckCircle2 className="w-7 h-7 text-emerald-400" /> : <Users className="w-7 h-7 text-orange-400" />}
-                      </div>
-                      <span className="text-white font-extrabold text-base">
-                        {members.length === 0 ? 'Model Emptied & Ready for Live Use' : 'No Matching Member Records'}
-                      </span>
-                      <span className="text-xs text-slate-300 leading-relaxed text-center">
-                        {members.length === 0
-                          ? 'The database is completely clear and ready for real member intake. Operators (Anibal, Marcus, Ahebwa, etc.) can enter data concurrently.'
-                          : 'No members matched your search and filter criteria. Adjust your filters or register a new member.'}
-                      </span>
-                      <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                        <button
-                          onClick={onOpenRegister}
-                          className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4 stroke-[3]" />
-                          <span>Register New Member</span>
-                        </button>
+            {/* Desktop Table (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size > 0 && selectedIds.size === paginatedMembers.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded text-orange-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
+                      />
+                    </th>
+                    <th className="py-3 px-4">Member Name &amp; Contact</th>
+                    <th className="py-3 px-4">PIN</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Portfolio / Course</th>
+                    <th className="py-3 px-4">Hostel / Residence</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
 
-                        {members.length === 0 && (
-                          <>
+                <tbody className="divide-y divide-slate-800">
+                  {paginatedMembers.map((member) => {
+                    const p = getMemberPortfolio(member);
+                    const isSelected = selectedIds.has(member.id);
+
+                    return (
+                      <tr
+                        key={member.id}
+                        className={`hover:bg-slate-850/80 transition-colors ${
+                          isSelected ? 'bg-orange-500/10' : ''
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectMember(member.id)}
+                            className="w-4 h-4 rounded text-orange-500 bg-slate-800 border-slate-700 focus:ring-0 cursor-pointer"
+                          />
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-orange-400 shrink-0">
+                              {member.fullName.charAt(0)}
+                            </div>
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => onSelectMember(member)}
+                                className="font-bold text-white hover:text-orange-400 cursor-pointer text-left"
+                              >
+                                {member.fullName}
+                              </button>
+                              <div className="text-[11px] text-slate-400 mt-0.5 tabular-nums">
+                                {member.phone} · {member.gender}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 font-mono font-bold text-amber-400 whitespace-nowrap">
+                          {member.id}
+                        </td>
+
+                        <td className="py-3 px-4 text-slate-200">{member.status}</td>
+
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-200">{p}</div>
+                          <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                            {member.studentInfo?.course || member.studentInfo?.campus || 'Member'}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {member.hostelOrResidence || member.residence || 'Kansanga'}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={simulateConcurrentEntryDemo}
-                              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-orange-300 font-bold text-xs border border-orange-500/40 flex items-center gap-1.5 cursor-pointer"
+                              type="button"
+                              onClick={() => onViewIdCard(member)}
+                              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors cursor-pointer"
+                              title="View QR Pass"
                             >
-                              <Sparkles className="w-3.5 h-3.5" />
-                              <span>Simulate 6-Party Entry</span>
+                              <QrCode className="w-4 h-4" />
                             </button>
 
                             <button
-                              onClick={loadDemoData}
-                              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                              type="button"
+                              onClick={() => onSelectMember(member)}
+                              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                              title="View Profile"
                             >
-                              <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
-                              <span>Load Demo Dataset</span>
+                              <Eye className="w-4 h-4" />
                             </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Table footer count */}
-        <div className="p-3.5 bg-slate-850 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>
-            Showing <strong className="text-white">{filteredMembers.length}</strong> of {members.length} registered members
+                            <button
+                              type="button"
+                              onClick={() => setMemberToDelete(member)}
+                              className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                              title="Delete Member"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Pagination Footer */}
+        <div className="px-4 py-3 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span className="tabular-nums">
+            Showing {paginatedMembers.length} of {filteredMembers.length.toLocaleString()}
           </span>
-          <span className="text-[11px] text-slate-500">
-            Full User Deletion Access Granted • 7-Day Auto-Update Active
-          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="font-bold text-white tabular-nums">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* SINGLE MEMBER DELETE CONFIRMATION MODAL */}
+      {/* Single Member Delete Bottom Sheet */}
       {memberToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-rose-500/40 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border-t sm:border border-rose-500/40 rounded-t-3xl sm:rounded-2xl p-5 pb-safe max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
               <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
                 <AlertTriangle className="w-6 h-6" />
@@ -743,71 +645,71 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
               <div>
                 <h3 className="text-base font-bold text-white">Delete Member Record?</h3>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Are you sure you want to delete <strong className="text-white">{memberToDelete.fullName}</strong> ({memberToDelete.id})? This will immediately remove this member from the database for all operators.
+                  Are you sure you want to delete <strong className="text-white">{memberToDelete.fullName}</strong> ({memberToDelete.id})?
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800 text-xs">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setMemberToDelete(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmSingleDelete}
-                className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer"
               >
-                Yes, Delete Record
+                Delete Record
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* BATCH DELETE CONFIRMATION MODAL */}
+      {/* Batch Delete Bottom Sheet */}
       {isBatchDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-rose-500/50 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border-t sm:border border-rose-500/50 rounded-t-3xl sm:rounded-2xl p-5 pb-safe max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
               <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
                 <Trash2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Batch Delete {selectedIds.size} Member(s)?</h3>
+                <h3 className="text-base font-bold text-white">Delete {selectedIds.size} Members?</h3>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  You are about to permanently delete <strong className="text-white">{selectedIds.size} selected member record(s)</strong>. This action will reflect in real time across all logged-in parties and offline queues.
+                  This permanently removes the selected {selectedIds.size} member records.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800 text-xs">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setIsBatchDeleteModalOpen(false)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmBatchDelete}
-                className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer"
               >
-                Yes, Delete Selected
+                Delete Selected
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* EMPTY ALL MEMBERS CONFIRMATION MODAL */}
+      {/* Empty Model Confirmation Bottom Sheet */}
       {showEmptyConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-rose-500/50 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border-t sm:border border-rose-500/50 rounded-t-3xl sm:rounded-2xl p-5 pb-safe max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
               <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
                 <AlertTriangle className="w-6 h-6" />
@@ -815,16 +717,16 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
               <div>
                 <h3 className="text-base font-bold text-white">Empty All Member Records?</h3>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Are you sure you want to empty the member database? This clears all existing members so your operators (<strong>Anibal</strong>, <strong>Marcus</strong>, <strong>Ahebwa</strong>, etc.) can start entering actual live records.
+                  This clears all existing member records so operators can start fresh.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800 text-xs">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowEmptyConfirm(false)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
               >
                 Cancel
               </button>
@@ -835,15 +737,14 @@ export const MemberDirectory: React.FC<MemberDirectoryProps> = ({
                   setSelectedIds(new Set());
                   setShowEmptyConfirm(false);
                 }}
-                className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer"
               >
-                Yes, Empty All Records
+                Empty Records
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

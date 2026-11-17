@@ -51,8 +51,6 @@ export interface Member {
   invitedBy?: string;
   
   homeId?: string; // Legacy / optional
-  departmentIds?: string[]; // e.g. ['dept-choir', 'dept-media']
-  
   notes?: string;
 
   // Real-Time Multi-Party Attribution
@@ -143,7 +141,7 @@ export type FellowshipFamily = HomeGroup;
 
 export interface Department {
   id: string;
-  name: string; // e.g. "Choir & Worship", "Media & Production", "Protocol & Ushers"
+  name: string;
   code: string;
   leaderId: string;
   leaderName: string;
@@ -198,7 +196,7 @@ export type ExpenseCategory =
   | 'Printing & Publicity'
   | 'Media & Tech'
   | 'Outreach & Missions'
-  | 'Welfare & Hospitality'
+  | 'Hospitality & Fellowship'
   | 'Refreshments'
   | 'Administration'
   | 'Honorarium'
@@ -266,8 +264,8 @@ export interface BudgetItem {
 export interface Budget {
   id: string;
   title: string;
-  type: 'Event' | 'Department' | 'Project' | 'Annual Fellowship';
-  targetId?: string; // eventId, departmentId, or projectId
+  type: 'Event' | 'Project' | 'Annual Fellowship';
+  targetId?: string; // eventId or projectId
   totalAllocated: number;
   totalSpent: number;
   startDate: string;
@@ -295,7 +293,7 @@ export interface AuditLog {
   timestamp: string;
   userName: string;
   userRole: UserRole;
-  module: 'Members' | 'Attendance' | 'Finance' | 'Events' | 'Homes' | 'Departments' | 'System';
+  module: 'Members' | 'Attendance' | 'Finance' | 'Events' | 'Homes' | 'System';
   action: string;
   targetEntityId?: string;
   details: string;
@@ -309,7 +307,7 @@ export interface CommunicationMessage {
   channel: 'SMS' | 'Email' | 'Announcement' | 'In-App';
   title: string;
   body: string;
-  recipientGroup: 'All Members' | 'First Timers' | 'Home Group' | 'Department' | 'Leaders' | 'Absent Last Week';
+  recipientGroup: 'All Members' | 'First Timers' | 'Home Group' | 'Leaders' | 'Absent Last Week';
   recipientCount: number;
   status: 'Sent' | 'Scheduled' | 'Draft';
   targetGroupId?: string;
